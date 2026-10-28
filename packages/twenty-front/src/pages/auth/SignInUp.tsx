@@ -29,6 +29,7 @@ import { useMemo } from 'react';
 
 import { SignInUpGlobalScopeFormEffect } from '@/auth/sign-in-up/components/internal/SignInUpGlobalScopeFormEffect';
 import { SignInUpSsoExchangeTokenEffect } from '@/auth/sign-in-up/components/internal/SignInUpSsoExchangeTokenEffect';
+import { SignInUpTrustedProxyEffect } from '@/auth/sign-in-up/components/internal/SignInUpTrustedProxyEffect';
 import { SignInUpTwoFactorAuthenticationProvision } from '@/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationProvision';
 import { SignInUpTwoFactorAuthenticationRecovery } from '@/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationRecovery';
 import { SignInUpTOTPVerification } from '@/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationVerification';
@@ -187,6 +188,7 @@ export const SignInUp = () => {
     if (isDefined(workspacePublicData) && isOnAWorkspace) {
       return (
         <>
+          <SignInUpTrustedProxyEffect />
           <SignInUpWorkspaceScopeFormEffect />
           <SignInUpWorkspaceScopeForm />
         </>
@@ -195,6 +197,7 @@ export const SignInUp = () => {
 
     return (
       <>
+        <SignInUpTrustedProxyEffect />
         <SignInUpSsoExchangeTokenEffect />
         <SignInUpGlobalScopeFormEffect />
         <SignInUpGlobalScopeForm />

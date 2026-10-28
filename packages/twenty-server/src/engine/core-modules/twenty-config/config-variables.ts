@@ -1744,6 +1744,17 @@ export class ConfigVariables {
     group: ConfigVariablesGroup.SERVER_CONFIG,
     isSensitive: true,
     description:
+      'Secret a trusted gateway sends in X-Famiglia-Key with the signed-in email in X-Famiglia-User. When set, /auth/trusted-proxy signs that person in.',
+    isEnvOnly: true,
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  AUTH_TRUSTED_PROXY_SECRET: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    isSensitive: true,
+    description:
       'Verification-only fallback key. During rotation, set this to the previous ENCRYPTION_KEY so rows encrypted with the old key remain decryptable and session cookies signed under it still verify.',
     isEnvOnly: true,
     type: ConfigVariableType.STRING,

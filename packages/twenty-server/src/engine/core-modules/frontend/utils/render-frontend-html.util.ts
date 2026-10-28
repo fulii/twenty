@@ -16,9 +16,13 @@ export const renderFrontendHtml = (
   template: string,
   clientConfig: ClientConfig,
   basePath = '',
+  extraEnv: Record<string, string> = {},
 ): string => {
   const serializedConfig = serializeForScript(clientConfig);
-  const env = basePath === '' ? {} : { REACT_APP_BASE_PATH: basePath };
+  const env = {
+    ...(basePath === '' ? {} : { REACT_APP_BASE_PATH: basePath }),
+    ...extraEnv,
+  };
 
   return template
     .replace(
