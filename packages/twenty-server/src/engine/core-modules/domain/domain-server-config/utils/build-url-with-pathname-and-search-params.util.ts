@@ -1,3 +1,5 @@
+import { joinUrlPathname } from 'twenty-shared/utils';
+
 import { appendSearchParamsToUrl } from 'src/engine/core-modules/domain/domain-server-config/utils/append-search-params-to-url.util';
 
 type BuildUrlWithPathnameAndSearchParamsProps = {
@@ -16,7 +18,7 @@ export const buildUrlWithPathnameAndSearchParams = ({
   const url = baseUrl;
 
   if (pathname) {
-    url.pathname = pathname;
+    url.pathname = joinUrlPathname(url.pathname, pathname);
   }
 
   if (searchParams) {

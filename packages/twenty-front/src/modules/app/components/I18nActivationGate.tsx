@@ -3,6 +3,7 @@ import { OnboardingPageLoader } from '@/onboarding/components/OnboardingPageLoad
 import { i18n } from '@lingui/core';
 import { isNonEmptyString } from '@sniptt/guards';
 import { type ReactNode, useEffect, useState } from 'react';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 type I18nActivationGateProps = {
   children: ReactNode;
@@ -27,7 +28,7 @@ export const I18nActivationGate = ({ children }: I18nActivationGateProps) => {
   }, []);
 
   if (!isLocaleActivated) {
-    return isOnOnboardingTransitionPath(window.location.pathname) ? (
+    return isOnOnboardingTransitionPath(getAppPathname()) ? (
       <OnboardingPageLoader />
     ) : null;
   }

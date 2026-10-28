@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { Avatar } from 'twenty-ui/primitives/data-display';
 import { IconRefresh } from 'twenty-ui/icon';
 import { useTheme, themeCssVariables } from 'twenty-ui/theme';
+import { BASE_PATH } from '~/config';
 
 type AppConnectionHeaderProps = {
   appLogoUrl?: string | null;
@@ -66,7 +67,10 @@ export const AppConnectionHeader = ({
   return (
     <StyledContainer>
       <StyledAppLogoTile>
-        <StyledAppLogo src={'/images/integrations/twenty-logo.svg'} alt="" />
+        <StyledAppLogo
+          src={`${BASE_PATH}/images/integrations/twenty-logo.svg`}
+          alt=""
+        />
       </StyledAppLogoTile>
       <StyledLinkIconContainer aria-hidden>
         <IconRefresh size={theme.icon.size.md} stroke={theme.icon.stroke.lg} />

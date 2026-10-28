@@ -6,7 +6,11 @@ import { Readable } from 'stream';
 import { type ReadableStream } from 'stream/web';
 
 import { type NextFunction, type Request, type Response } from 'express';
-import { isDefined, normalizeAllowedIframeOrigin } from 'twenty-shared/utils';
+import {
+  getUrlBasePath,
+  isDefined,
+  normalizeAllowedIframeOrigin,
+} from 'twenty-shared/utils';
 
 import { ClientConfigService } from 'src/engine/core-modules/client-config/services/client-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -25,6 +29,7 @@ export class FrontendService {
   private readonly logger = new Logger(FrontendService.name);
   private readonly template: string | undefined;
   private readonly indexUrl: string | undefined;
+  private readonly basePath: string;
 
   constructor(
     private readonly clientConfigService: ClientConfigService,
@@ -33,6 +38,7 @@ export class FrontendService {
     twentyConfigService: TwentyConfigService,
   ) {
     this.indexUrl = twentyConfigService.get('FRONTEND_INDEX_URL');
+    this.basePath = getUrlBasePath(twentyConfigService.get('SERVER_URL'));
 
     if (isDefined(this.indexUrl)) {
       return;
@@ -147,7 +153,9 @@ export class FrontendService {
         response.removeHeader('X-Frame-Options');
       }
 
-      response.type('html').end(renderFrontendHtml(template, clientConfig));
+      response
+        .type('html')
+        .end(renderFrontendHtml(template, clientConfig, this.basePath));
     } catch (error) {
       this.logger.error('Unable to serve frontend document', error);
       response

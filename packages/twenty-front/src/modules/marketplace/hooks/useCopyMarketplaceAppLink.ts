@@ -5,6 +5,7 @@ import { useLingui } from '@lingui/react/macro';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
 import { useCopyToClipboard } from '~/hooks/useCopyToClipboard';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 export const useCopyMarketplaceAppLink = () => {
   const { t } = useLingui();
@@ -15,7 +16,7 @@ export const useCopyMarketplaceAppLink = () => {
   );
 
   const copyMarketplaceAppLink = (universalIdentifier: string) => {
-    const url = new URL(window.location.origin);
+    const url = buildAbsoluteAppUrl('/');
 
     if (isMultiWorkspaceEnabled) {
       url.hostname = defaultDomain;

@@ -10,6 +10,8 @@ import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useI
 import { OnboardingPageLoader } from '@/onboarding/components/OnboardingPageLoader';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { UserOrMetadataLoader } from '~/loading/components/UserOrMetadataLoader';
+import { getAppPathname } from '~/utils/getAppPathname';
+import { BASE_PATH } from '~/config';
 
 export const DomainShell = () => {
   const { isLoadedOnce } = useAtomStateValue(clientConfigApiStatusState);
@@ -20,9 +22,9 @@ export const DomainShell = () => {
 
   if (!isLoadedOnce) {
     return (
-      <BrowserRouter useTransitions={false}>
+      <BrowserRouter basename={BASE_PATH || '/'} useTransitions={false}>
         <SharedAppProviders>
-          {isOnOnboardingTransitionPath(window.location.pathname) ? (
+          {isOnOnboardingTransitionPath(getAppPathname()) ? (
             <OnboardingPageLoader />
           ) : (
             <UserOrMetadataLoader />

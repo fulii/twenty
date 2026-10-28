@@ -87,7 +87,7 @@ export const VerifyEmailEffect = ({ onError }: VerifyEmailEffectProps) => {
         enqueueToast(successToastOptions);
 
         const workspaceUrl = getWorkspaceUrl(workspaceUrls);
-        if (workspaceUrl.slice(0, -1) !== window.location.origin) {
+        if (new URL(workspaceUrl).origin !== window.location.origin) {
           return await redirectToWorkspaceDomain(workspaceUrl, AppPath.Verify, {
             loginToken: loginToken.token,
           });

@@ -9,6 +9,7 @@ import { SidePanelShareRecordContent } from '@/side-panel/pages/share-record/com
 import { shareRecordTargetComponentState } from '@/side-panel/pages/share-record/states/shareRecordTargetComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { type RecordTargetInput } from '~/generated-metadata/graphql';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 const SidePanelShareRecordPageContent = ({
   target,
@@ -31,11 +32,10 @@ const SidePanelShareRecordPageContent = ({
         objectLabelPlural={objectMetadataItem.labelPlural}
         sharingReach={objectMetadataItem.sharingReach}
         recordUrl={
-          new URL(
+          buildAbsoluteAppUrl(
             getLinkToShowPage(objectMetadataItem.nameSingular, {
               id: target.recordId,
             }),
-            window.location.origin,
           ).href
         }
         sharingState={sharingState}

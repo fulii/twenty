@@ -9,6 +9,7 @@ import { useContainer } from 'class-validator';
 import session from 'express-session';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { ApiPath } from 'twenty-shared/types';
+import { getUrlBasePath } from 'twenty-shared/utils';
 
 import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
 
@@ -22,6 +23,7 @@ import { configTransformers } from 'src/engine/core-modules/twenty-config/utils/
 import { UsageRecorderService } from 'src/engine/core-modules/usage/services/usage-recorder.service';
 import { applyCredentialedCors } from 'src/engine/core-modules/user-session/utils/apply-credentialed-cors.util';
 import { shouldCaptureException } from 'src/engine/utils/global-exception-handler.util';
+import { createBasePathMiddleware } from 'src/utils/create-base-path-middleware.util';
 
 import { AppModule } from './app.module';
 import './instrument';
@@ -60,6 +62,12 @@ const bootstrap = async () => {
       exceptionHandlerService.captureExceptions([error]);
     }
   });
+
+  const basePath = getUrlBasePath(twentyConfigService.get('SERVER_URL'));
+
+  if (basePath !== '') {
+    app.use(createBasePathMiddleware(basePath));
+  }
 
   const trustProxyRaw = twentyConfigService.get('TRUST_PROXY');
   const trustProxy = /^\d+$/.test(trustProxyRaw)

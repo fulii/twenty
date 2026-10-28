@@ -1,4 +1,4 @@
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, joinUrlPathname } from 'twenty-shared/utils';
 export const useBuildWorkspaceUrl = () => {
   const buildWorkspaceUrl = (
     endpoint: string,
@@ -8,7 +8,7 @@ export const useBuildWorkspaceUrl = () => {
     const url = new URL(endpoint);
 
     if (isDefined(pathname)) {
-      url.pathname = pathname;
+      url.pathname = joinUrlPathname(url.pathname, pathname);
     }
 
     if (isDefined(searchParams)) {

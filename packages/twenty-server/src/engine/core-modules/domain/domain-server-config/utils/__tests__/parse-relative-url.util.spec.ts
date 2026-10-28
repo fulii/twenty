@@ -60,4 +60,16 @@ describe('parseRelativeUrl', () => {
       'https://acme.twenty.com/object/company/46d9f704-ee56-4063-835b-ffb3aea3c544#630fec80-dc2d-400b-b760-f8d9b7402cac',
     );
   });
+
+  it('keeps the path a sub-path deployment is served under', () => {
+    const url = buildUrlWithPathnameAndSearchParams({
+      baseUrl: new URL('https://example.com/crm'),
+      pathname: '/verify',
+      searchParams: { loginToken: 'token' },
+    });
+
+    expect(url.toString()).toBe(
+      'https://example.com/crm/verify?loginToken=token',
+    );
+  });
 });

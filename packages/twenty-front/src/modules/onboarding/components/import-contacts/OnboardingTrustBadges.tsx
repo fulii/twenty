@@ -1,7 +1,8 @@
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme';
+import { BASE_PATH } from '~/config';
 
-const BADGE_ASSET_PATH = '/images/onboarding/trust-badges';
+const BADGE_ASSET_PATH = `${BASE_PATH}/images/onboarding/trust-badges`;
 
 const StyledRow = styled.div`
   align-items: center;

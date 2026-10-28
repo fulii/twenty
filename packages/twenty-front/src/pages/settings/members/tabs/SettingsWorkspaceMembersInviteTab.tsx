@@ -29,6 +29,7 @@ import { Tooltip } from 'twenty-ui/primitives/surfaces';
 import { useTheme, themeCssVariables } from 'twenty-ui/theme';
 import { GetWorkspaceInvitationsDocument } from '~/generated-metadata/graphql';
 import { dateLocaleState } from '@/localization/states/dateLocaleState';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 const StyledButtonContainer = styled.div`
   align-items: center;
@@ -130,7 +131,9 @@ export const SettingsWorkspaceMembersInviteTab = () => {
               description={t`Share this link to invite users to join your workspace`}
             />
             <WorkspaceInviteLink
-              inviteLink={`${window.location.origin}/invite/${currentWorkspace?.inviteHash}`}
+              inviteLink={buildAbsoluteAppUrl(
+                `/invite/${currentWorkspace?.inviteHash}`,
+              ).toString()}
             />
           </Section.Root>
         )}

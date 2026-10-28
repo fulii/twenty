@@ -10,6 +10,7 @@ import { getCurrentHistoryEntryState } from '~/utils/getCurrentHistoryEntryState
 import { isAiChatInboxPath } from '~/utils/isAiChatInboxPath';
 import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
 import { isMatchingPathname } from '~/utils/isMatchingPathname';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 type UseProjectAiChatThreadToUrlParams = {
   shouldPreserveClosedInbox?: boolean;
@@ -23,7 +24,7 @@ export const useProjectAiChatThreadToUrl = ({
 
   const projectAiChatThreadToUrl = useCallback(
     (threadId: string) => {
-      const pathname = window.location.pathname;
+      const pathname = getAppPathname();
       const isOnInboxPage = isAiChatInboxPath(pathname);
       const isInboxClosed = isMatchingPathname(
         pathname,

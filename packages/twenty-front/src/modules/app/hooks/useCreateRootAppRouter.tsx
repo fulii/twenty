@@ -15,6 +15,7 @@ import { OnboardingPageLoader } from '@/onboarding/components/OnboardingPageLoad
 import { OnboardingTransitionOutlet } from '@/onboarding/components/OnboardingTransitionOutlet';
 import { AuthFlowLayout } from '@/ui/layout/page/components/AuthFlowLayout';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
+import { BASE_PATH } from '~/config';
 
 const SignInUp = lazy(() =>
   import('~/pages/auth/SignInUp').then((module) => ({
@@ -73,6 +74,7 @@ const createRootAppRouter = () =>
         />
       </Route>,
     ),
+    { basename: BASE_PATH || '/' },
   );
 
 export const useCreateRootAppRouter = () => {

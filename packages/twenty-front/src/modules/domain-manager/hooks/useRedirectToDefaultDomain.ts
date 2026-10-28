@@ -6,6 +6,8 @@ import { useReadDefaultDomainFromConfiguration } from '@/domain-manager/hooks/us
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useStore } from 'jotai';
+import { BASE_PATH } from '~/config';
+import { joinUrlPathname } from 'twenty-shared/utils';
 
 export const useRedirectToDefaultDomain = () => {
   const { defaultDomain } = useReadDefaultDomainFromConfiguration();
@@ -35,7 +37,7 @@ export const useRedirectToDefaultDomain = () => {
       }
 
       if (isNonEmptyString(options?.pathname)) {
-        url.pathname = options.pathname;
+        url.pathname = joinUrlPathname(BASE_PATH, options.pathname);
       }
 
       Object.entries(options?.searchParams ?? {}).forEach(([key, value]) => {

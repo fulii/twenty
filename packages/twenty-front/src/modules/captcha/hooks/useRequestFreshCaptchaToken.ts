@@ -7,6 +7,7 @@ import { useCallback } from 'react';
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
 import { CaptchaDriverType } from '~/generated-metadata/graphql';
 import { useStore } from 'jotai';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 export const useRequestFreshCaptchaToken = () => {
   const store = useStore();
@@ -16,7 +17,7 @@ export const useRequestFreshCaptchaToken = () => {
   );
 
   const requestFreshCaptchaToken = useCallback(async () => {
-    if (!isCaptchaRequiredForPath(window.location.pathname)) {
+    if (!isCaptchaRequiredForPath(getAppPathname())) {
       return;
     }
 
