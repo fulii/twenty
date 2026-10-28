@@ -44,6 +44,7 @@ import {
   type BillingPlanKey,
   SubscriptionInterval,
 } from '~/generated-metadata/graphql';
+import { BASE_PATH } from '~/config';
 
 const StyledSubtitleEmphasis = styled.span`
   color: ${themeCssVariables.font.color.primary};
@@ -341,7 +342,11 @@ const UpgradeFreeTrialContent = ({
             <span />
             <Button
               variant="link"
-              href={calendarBookingPageId ? AppPath.BookCall : CAL_LINK}
+              href={
+                calendarBookingPageId
+                  ? `${BASE_PATH}${AppPath.BookCall}`
+                  : CAL_LINK
+              }
               target={calendarBookingPageId ? '_self' : '_blank'}
               rel={calendarBookingPageId ? '' : 'noreferrer'}
             >

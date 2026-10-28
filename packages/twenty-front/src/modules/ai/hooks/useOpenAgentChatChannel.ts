@@ -11,6 +11,7 @@ import {
   AgentChatChannelThreadStatus,
 } from '~/generated-metadata/graphql';
 import { isMatchingPathname } from '~/utils/isMatchingPathname';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 export const useOpenAgentChatChannel = () => {
   const store = useStore();
@@ -30,7 +31,7 @@ export const useOpenAgentChatChannel = () => {
       });
       navigate(AppPath.AiChatInbox, { threadId: null }, undefined, {
         replace: isMatchingPathname(
-          window.location.pathname,
+          getAppPathname(),
           getAppPath(AppPath.AiChatInbox, { threadId: null }),
         ),
       });

@@ -4,6 +4,7 @@ import { t } from '@lingui/core/macro';
 import { IconReload } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/primitives/input';
 import { themeCssVariables } from 'twenty-ui/theme';
+import { BASE_PATH } from '~/config';
 
 type AppRootErrorFallbackProps = AppErrorDisplayProps;
 
@@ -91,11 +92,11 @@ export const AppRootErrorFallback = ({
         <StyledEmptyContainer>
           <StyledImageContainer>
             <StyledBackgroundImage
-              src="/images/placeholders/background/error_index_bg.png"
+              src={`${BASE_PATH}/images/placeholders/background/error_index_bg.png`}
               alt={t`Background`}
             />
             <StyledInnerImage
-              src="/images/placeholders/moving-image/error_index.png"
+              src={`${BASE_PATH}/images/placeholders/moving-image/error_index.png`}
               alt={t`Error illustration`}
             />
           </StyledImageContainer>

@@ -4,6 +4,7 @@ import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPage
 import { type AgentChatThreadRecord } from '@/ai/types/AgentChatThreadRecord';
 import { isAiChatInboxPath } from '~/utils/isAiChatInboxPath';
 import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 type UseAiChatThreadClickOptions = {
   resetNavigationStack?: boolean;
@@ -23,7 +24,7 @@ export const useAiChatThreadClick = (
     selectAiChatThread(thread.id);
 
     const isOnChatPage =
-      isCurrentPathAiChatPage() || isAiChatInboxPath(window.location.pathname);
+      isCurrentPathAiChatPage() || isAiChatInboxPath(getAppPathname());
 
     if (isOnChatPage) {
       return;

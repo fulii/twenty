@@ -12,6 +12,7 @@ import {
   type SubscriptionInterval,
   CreateSubscriptionPaymentIntentDocument,
 } from '~/generated-metadata/graphql';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 type UseSubmitSubscriptionPaymentParams = {
   plan: BillingPlanKey;
@@ -68,9 +69,8 @@ export const useSubmitSubscriptionPayment = ({
         return;
       }
 
-      const returnUrl = new URL(
+      const returnUrl = buildAbsoluteAppUrl(
         AppPath.PlanRequiredSuccess,
-        window.location.origin,
       ).toString();
 
       const { error } =

@@ -2,6 +2,7 @@ import { isOnOnboardingVerifyPath } from '@/auth/utils/isOnOnboardingVerifyPath'
 import { OnboardingPulsingLogo } from '@/onboarding/components/OnboardingPulsingLogo';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 const StyledContainer = styled.div`
   align-items: center;
@@ -16,8 +17,6 @@ const StyledContainer = styled.div`
 // No logo: the verify screen renders its own, which would flash twice on cold boot.
 export const OnboardingPageLoader = () => (
   <StyledContainer>
-    {!isOnOnboardingVerifyPath(window.location.pathname) && (
-      <OnboardingPulsingLogo />
-    )}
+    {!isOnOnboardingVerifyPath(getAppPathname()) && <OnboardingPulsingLogo />}
   </StyledContainer>
 );

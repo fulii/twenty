@@ -1,6 +1,7 @@
 import { styled } from '@linaria/react';
 import { IconArrowRight, IconGoogle, IconMicrosoft } from 'twenty-ui/icon';
 import { themeCssVariables, useTheme } from 'twenty-ui/theme';
+import { BASE_PATH } from '~/config';
 
 const SYNC_BADGE_LOGO_SIZE = 16;
 
@@ -69,7 +70,10 @@ export const OnboardingImportPreviewSyncBadge = () => {
           color={themeCssVariables.font.color.tertiary}
         />
       </StyledArrow>
-      <StyledTwentyLogo src="/images/integrations/twenty-logo.svg" alt="" />
+      <StyledTwentyLogo
+        src={`${BASE_PATH}/images/integrations/twenty-logo.svg`}
+        alt=""
+      />
     </StyledBadge>
   );
 };

@@ -21,6 +21,7 @@ import { InlineBanner, useToast } from 'twenty-ui/components/feedback';
 import { Button } from 'twenty-ui/primitives/input';
 import { themeCssVariables } from 'twenty-ui/theme';
 import { CreateBillingPaymentMethodSetupIntentDocument } from '~/generated-metadata/graphql';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 type AddPaymentMethodFormContentProps = {
   finalRedirectPath?: string;
@@ -59,7 +60,7 @@ const AddPaymentMethodFormContent = ({
   const buildReturnUrl = () => {
     const basePath =
       finalRedirectPath ?? `${location.pathname}${location.search}`;
-    const returnUrl = new URL(basePath, window.location.origin);
+    const returnUrl = buildAbsoluteAppUrl(basePath);
 
     if (shouldStartSubscriptionAfterPaymentMethod) {
       returnUrl.searchParams.set(

@@ -103,6 +103,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: __dirname,
+    // Relative, so one build serves at the root or under any sub-path: the
+    // server writes the path into index.html (renderFrontendHtml)
+    base: './',
     cacheDir: '../../node_modules/.vite/packages/twenty-front',
 
     server: {

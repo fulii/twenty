@@ -6,6 +6,7 @@ import { isLayoutCustomizationModeEnabledState } from '@/layout-customization/st
 import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 export const useNavigateToAiChatPage = () => {
   const store = useStore();
@@ -38,7 +39,7 @@ export const useNavigateToAiChatPage = () => {
           // Read from the window rather than useLocation so that opening a new
           // chat does not require a router context from every caller of
           // useSwitchToNewAiChat, front components included.
-          returnLocation: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          returnLocation: `${getAppPathname()}${window.location.search}${window.location.hash}`,
         },
       },
     );

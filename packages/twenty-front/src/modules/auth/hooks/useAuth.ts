@@ -6,7 +6,7 @@ import {
 import { useCallback } from 'react';
 import { AppPath } from 'twenty-shared/types';
 
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
+import { BASE_PATH, REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
   type AuthToken,
   CheckUserExistsDocument,
@@ -135,7 +135,7 @@ export const useAuth = () => {
     clearSessionGeneration();
     clearSessionLocalStorageKeys();
     setLastAuthenticateWorkspaceDomain(null);
-    window.location.assign(AppPath.SignInUp);
+    window.location.assign(`${BASE_PATH}${AppPath.SignInUp}`);
   }, [store, setLastAuthenticateWorkspaceDomain]);
 
   const navigateAfterMultiWorkspaceSignInUp = useCallback(

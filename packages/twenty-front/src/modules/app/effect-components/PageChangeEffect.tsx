@@ -39,6 +39,7 @@ import { isDefined, isSafeInternalPath } from 'twenty-shared/utils';
 import { usePageChangeEffectNavigateLocation } from '@/app/hooks/usePageChangeEffectNavigateLocation';
 import { getPageLayoutIdForLocation } from '@/app/utils/getPageLayoutIdForLocation';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 // TODO: break down into smaller functions and / or hooks
 export const PageChangeEffect = () => {
@@ -167,7 +168,7 @@ export const PageChangeEffect = () => {
         !isOnAuthOrOnboardingPage
       ) {
         saveReturnToPath(
-          `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          `${getAppPathname()}${window.location.search}${window.location.hash}`,
         );
       }
 

@@ -29,9 +29,10 @@ import McpCoverDark from '@/settings/mcp/assets/mcp-cover-dark.png';
 import McpCoverLight from '@/settings/mcp/assets/mcp-cover-light.png';
 import { SettingsMcpSetup } from '@/settings/mcp/components/SettingsMcpSetup';
 import { useCreateTool } from '~/pages/settings/ai/hooks/useCreateTool';
+import { BASE_PATH } from '~/config';
 
-const AI_HERO_LIGHT = '/images/ai/ai-tools-cover-light.png';
-const AI_HERO_DARK = '/images/ai/ai-tools-cover-dark.png';
+const AI_HERO_LIGHT = `${BASE_PATH}/images/ai/ai-tools-cover-light.png`;
+const AI_HERO_DARK = `${BASE_PATH}/images/ai/ai-tools-cover-dark.png`;
 
 const SETTINGS_AI_HERO_INSTANCE_ID_PREFIX = 'settings-ai-hero';
 

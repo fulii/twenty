@@ -19,6 +19,7 @@ import { IconCalendarEvent, IconTrash } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/primitives/input';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { getAppPathname } from '~/utils/getAppPathname';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -70,7 +71,7 @@ export const SidePanelComposeCalendarEventPage = () => {
 
     try {
       await triggerApisOAuth(selectedAccount.provider, {
-        redirectLocation: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+        redirectLocation: `${getAppPathname()}${window.location.search}${window.location.hash}`,
         loginHint: selectedAccount.handle,
       });
     } catch {

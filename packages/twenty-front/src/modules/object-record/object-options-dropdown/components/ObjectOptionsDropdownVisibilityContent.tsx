@@ -29,6 +29,7 @@ import {
   PermissionFlagType,
 } from '~/generated-metadata/graphql';
 import { useCopyToClipboard } from '~/hooks/useCopyToClipboard';
+import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
 
 export const ObjectOptionsDropdownVisibilityContent = () => {
   const { t } = useLingui();
@@ -59,9 +60,8 @@ export const ObjectOptionsDropdownVisibilityContent = () => {
   };
 
   const handleCopyLink = async () => {
-    const canonicalViewUrl = new URL(
+    const canonicalViewUrl = buildAbsoluteAppUrl(
       createPath(location),
-      window.location.origin,
     ).toString();
     await copyToClipboard(canonicalViewUrl, t`Link copied to clipboard`);
   };
