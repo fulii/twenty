@@ -5,6 +5,7 @@ import { join } from 'path';
 import { Readable } from 'stream';
 import { type ReadableStream } from 'stream/web';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { type NextFunction, type Request, type Response } from 'express';
 import {
   getUrlBasePath,
@@ -30,6 +31,7 @@ export class FrontendService {
   private readonly template: string | undefined;
   private readonly indexUrl: string | undefined;
   private readonly basePath: string;
+  private readonly extraEnv: Record<string, string>;
 
   constructor(
     private readonly clientConfigService: ClientConfigService,
@@ -39,6 +41,11 @@ export class FrontendService {
   ) {
     this.indexUrl = twentyConfigService.get('FRONTEND_INDEX_URL');
     this.basePath = getUrlBasePath(twentyConfigService.get('SERVER_URL'));
+    this.extraEnv = isNonEmptyString(
+      twentyConfigService.get('AUTH_TRUSTED_PROXY_SECRET'),
+    )
+      ? { REACT_APP_TRUSTED_PROXY_AUTH: 'true' }
+      : {};
 
     if (isDefined(this.indexUrl)) {
       return;
@@ -155,7 +162,14 @@ export class FrontendService {
 
       response
         .type('html')
-        .end(renderFrontendHtml(template, clientConfig, this.basePath));
+        .end(
+          renderFrontendHtml(
+            template,
+            clientConfig,
+            this.basePath,
+            this.extraEnv,
+          ),
+        );
     } catch (error) {
       this.logger.error('Unable to serve frontend document', error);
       response
