@@ -1,7 +1,7 @@
 [
   {
     "name": "infra",
-    "command": "for f in infra/lib.sh infra/prod/*.sh .codingmonkey/*.sh; do bash -n \"$f\" || exit 1; done && CM_SHA=check CM_CLUSTER_REGISTRY=registry.invalid/twenty infra/prod/render.sh >/dev/null",
+    "command": "for f in infra/lib.sh infra/prod/*.sh .codingmonkey/*.sh .codingmonkey/bin/yarn; do bash -n \"$f\" || exit 1; done && CM_SHA=check CM_CLUSTER_REGISTRY=registry.invalid/twenty infra/prod/render.sh >/dev/null",
     "timeoutMs": 60000,
     "paths": [
       "infra/**",

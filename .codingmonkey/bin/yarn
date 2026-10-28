@@ -1,0 +1,4 @@
+#!/bin/sh
+# The Yarn this repository pins (.yarnrc.yml yarnPath), for a machine with Node and no Yarn.
+root=$(cd "$(dirname "$0")/../.." && pwd)
+exec node "$root/$(sed -n 's/^yarnPath: //p' "$root/.yarnrc.yml")" "$@"

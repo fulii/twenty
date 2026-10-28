@@ -4,6 +4,8 @@
 #   .codingmonkey/check.sh twenty-server
 set -euo pipefail
 package=$1
+# Twenty's targets call yarn; the worker has none of its own.
+export PATH="$(git rev-parse --show-toplevel)/.codingmonkey/bin:$PATH"
 npx nx typecheck "$package"
 cd "packages/$package"
 mapfile -t files < <(git diff --name-only --relative --diff-filter=d origin/main...HEAD -- src/ test/ | grep -E '\.(ts|tsx)$' || true)
