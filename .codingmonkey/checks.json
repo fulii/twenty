@@ -1,0 +1,34 @@
+[
+  {
+    "name": "infra",
+    "command": "for f in infra/lib.sh infra/prod/*.sh .codingmonkey/*.sh; do bash -n \"$f\" || exit 1; done && CM_SHA=check CM_CLUSTER_REGISTRY=registry.invalid/twenty infra/prod/render.sh >/dev/null",
+    "timeoutMs": 60000,
+    "paths": [
+      "infra/**",
+      ".codingmonkey/**"
+    ]
+  },
+  {
+    "name": "server",
+    "command": ".codingmonkey/check.sh twenty-server",
+    "timeoutMs": 3600000,
+    "paths": [
+      "packages/twenty-server/**",
+      "packages/twenty-shared/**",
+      "packages/twenty-emails/**",
+      "packages/twenty-client-sdk/**"
+    ]
+  },
+  {
+    "name": "front",
+    "command": ".codingmonkey/check.sh twenty-front",
+    "timeoutMs": 3600000,
+    "paths": [
+      "packages/twenty-front/**",
+      "packages/twenty-shared/**",
+      "packages/twenty-ui/**",
+      "packages/twenty-sdk/**",
+      "packages/twenty-front-component-renderer/**"
+    ]
+  }
+]

@@ -1,0 +1,287 @@
+# Twenty's four parts, as packages/twenty-docker/docker-compose.yml runs them: the
+# server (API + web app, migrations at start), the worker (queues), Postgres 16 and
+# Redis. Reachable only through famiglia, at https://fam.fuli.dev/twenty. The Secret
+# twenty is deploy.sh's, from the workspace secrets (infra/README.md).
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-db
+spec:
+  selector:
+    app.kubernetes.io/name: twenty-db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: twenty-db
+spec:
+  serviceName: twenty-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-db
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:16.15-trixie@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+          env:
+            - {name: POSTGRES_DB, value: twenty}
+            - {name: POSTGRES_USER, value: twenty}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: twenty, key: db_password}}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, twenty, -d, twenty]
+            periodSeconds: 10
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 1Gi}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-redis
+spec:
+  selector:
+    app.kubernetes.io/name: twenty-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+# Cache and job queues; nothing in it outlives a restart that Twenty cannot rebuild.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: docker.io/library/redis:8.10.3-alpine@sha256:896f241f438ab6a210cfb24f573b84bea721a4cbe67f1b4fd07eb638b3b02a7b
+          # Twenty's compose file: queued jobs must never be evicted.
+          args: [--maxmemory-policy, noeviction]
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: [redis-cli, ping]
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 256Mi}
+---
+# Attachments and avatars (STORAGE_TYPE=local), shared by the server and the worker
+# (one node, so ReadWriteOnce serves both).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: twenty-storage
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-server
+spec:
+  selector:
+    app.kubernetes.io/name: twenty-server
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-server
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-server
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+      # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
+      initContainers:
+        - name: wait-for-db
+          image: docker.io/library/postgres:16.15-trixie@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+          command: [sh, -c, 'until pg_isready -h twenty-db -U twenty -d twenty; do echo "waiting for twenty-db"; sleep 2; done']
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 64Mi}
+      containers:
+        - name: server
+          image: ${IMAGE}
+          env:
+            - {name: NODE_PORT, value: "3000"}
+            # Its address behind famiglia (fulii/famiglia apps.yaml): the app, its API,
+            # OAuth callbacks and links all live under /twenty.
+            - {name: SERVER_URL, value: https://fam.fuli.dev/twenty}
+            # Google sign-in, Gmail and Calendar once GOOGLE_CLIENT_ID/SECRET are
+            # workspace secrets; passwords are off then (deploy.sh).
+            - name: AUTH_GOOGLE_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - name: AUTH_PASSWORD_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_password_enabled}}
+            - name: AUTH_GOOGLE_CLIENT_ID
+              valueFrom: {secretKeyRef: {name: twenty, key: google_client_id}}
+            - name: AUTH_GOOGLE_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: twenty, key: google_client_secret}}
+            - {name: AUTH_GOOGLE_CALLBACK_URL, value: https://fam.fuli.dev/twenty/auth/google/redirect}
+            - {name: AUTH_GOOGLE_APIS_CALLBACK_URL, value: https://fam.fuli.dev/twenty/auth/google-apis/get-access-token}
+            - name: MESSAGING_PROVIDER_GMAIL_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - name: CALENDAR_PROVIDER_GOOGLE_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - {name: REDIS_URL, value: redis://twenty-redis:6379}
+            - {name: STORAGE_TYPE, value: local}
+            - name: PG_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: twenty, key: db_url}}
+            # Also the at-rest encryption key while ENCRYPTION_KEY is unset.
+            - name: APP_SECRET
+              valueFrom: {secretKeyRef: {name: twenty, key: app_secret}}
+            # famiglia's X-Famiglia-Key: with it, X-Famiglia-User signs the person in.
+            - name: AUTH_TRUSTED_PROXY_SECRET
+              valueFrom: {secretKeyRef: {name: twenty, key: trusted_proxy_secret}}
+            # Twenty's AI (chat, agents, workflow steps) runs on Claude.
+            - name: ANTHROPIC_API_KEY
+              valueFrom: {secretKeyRef: {name: twenty, key: anthropic_api_key, optional: true}}
+          ports:
+            - name: http
+              containerPort: 3000
+          # The entrypoint creates the schema or upgrades it before the server listens.
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: storage, mountPath: /app/packages/twenty-server/.local-storage}
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {memory: 2Gi}
+      volumes:
+        - name: storage
+          persistentVolumeClaim: {claimName: twenty-storage}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-worker
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-worker
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+      # The server migrates the database at start; the worker waits for it, as in the compose file.
+      initContainers:
+        - name: wait-for-server
+          image: docker.io/library/busybox:1.38.0-musl@sha256:ea2b9914a16a4ac1981994af97b318f7c7d4db76b580c56177f08bf76f4a0be8
+          command: [sh, -c, 'until wget -q -T 5 -O /dev/null http://twenty-server:3000/healthz; do echo "waiting for twenty-server"; sleep 5; done']
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 32Mi}
+      containers:
+        - name: worker
+          image: ${IMAGE}
+          command: [yarn, worker:prod]
+          env:
+            - {name: NODE_PORT, value: "3000"}
+            - {name: SERVER_URL, value: https://fam.fuli.dev/twenty}
+            # Google sign-in, Gmail and Calendar once GOOGLE_CLIENT_ID/SECRET are
+            # workspace secrets; passwords are off then (deploy.sh).
+            - name: AUTH_GOOGLE_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - name: AUTH_PASSWORD_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_password_enabled}}
+            - name: AUTH_GOOGLE_CLIENT_ID
+              valueFrom: {secretKeyRef: {name: twenty, key: google_client_id}}
+            - name: AUTH_GOOGLE_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: twenty, key: google_client_secret}}
+            - {name: AUTH_GOOGLE_CALLBACK_URL, value: https://fam.fuli.dev/twenty/auth/google/redirect}
+            - {name: AUTH_GOOGLE_APIS_CALLBACK_URL, value: https://fam.fuli.dev/twenty/auth/google-apis/get-access-token}
+            - name: MESSAGING_PROVIDER_GMAIL_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - name: CALENDAR_PROVIDER_GOOGLE_ENABLED
+              valueFrom: {secretKeyRef: {name: twenty, key: auth_google_enabled}}
+            - {name: REDIS_URL, value: redis://twenty-redis:6379}
+            - {name: STORAGE_TYPE, value: local}
+            - name: PG_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: twenty, key: db_url}}
+            - name: APP_SECRET
+              valueFrom: {secretKeyRef: {name: twenty, key: app_secret}}
+            # The server already does both.
+            - name: ANTHROPIC_API_KEY
+              valueFrom: {secretKeyRef: {name: twenty, key: anthropic_api_key, optional: true}}
+            - {name: DISABLE_DB_MIGRATIONS, value: "true"}
+            - {name: DISABLE_CRON_JOBS_REGISTRATION, value: "true"}
+          volumeMounts:
+            - {name: storage, mountPath: /app/packages/twenty-server/.local-storage}
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {memory: 2Gi}
+      volumes:
+        - name: storage
+          persistentVolumeClaim: {claimName: twenty-storage}
