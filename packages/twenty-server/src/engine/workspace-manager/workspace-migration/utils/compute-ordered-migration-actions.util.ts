@@ -46,8 +46,9 @@ export const computeOrderedMigrationActions = (
     ...aggregatedOrchestratorActionsReport.workflow.delete,
     ...aggregatedOrchestratorActionsReport.workflow.create,
     ...aggregatedOrchestratorActionsReport.workflow.update,
-    ...aggregatedOrchestratorActionsReport.workflowVersion.create,
+    // At most one version per workflow is ACTIVE (unique index), so the published one is archived before its successor is created
     ...aggregatedOrchestratorActionsReport.workflowVersion.update,
+    ...aggregatedOrchestratorActionsReport.workflowVersion.create,
 
     ...aggregatedOrchestratorActionsReport.logicFunction.delete,
     ...aggregatedOrchestratorActionsReport.logicFunction.create,
@@ -146,6 +147,10 @@ export const computeOrderedMigrationActions = (
     ...aggregatedOrchestratorActionsReport.webhook.delete,
     ...aggregatedOrchestratorActionsReport.webhook.create,
     ...aggregatedOrchestratorActionsReport.webhook.update,
+
+    ...aggregatedOrchestratorActionsReport.mcpServer.delete,
+    ...aggregatedOrchestratorActionsReport.mcpServer.create,
+    ...aggregatedOrchestratorActionsReport.mcpServer.update,
 
     ...aggregatedOrchestratorActionsReport.applicationVariable.delete,
     ...aggregatedOrchestratorActionsReport.applicationVariable.create,

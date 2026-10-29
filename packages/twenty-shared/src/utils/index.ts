@@ -346,6 +346,7 @@ export { getSafeUrl } from './url/getSafeUrl';
 export { getUrlBasePath } from './url/getUrlBasePath';
 export { getUrlHostnameOrThrow } from './url/getUrlHostnameOrThrow';
 export { isAbsoluteUrl } from './url/isAbsoluteUrl';
+export { isHttpUrl } from './url/isHttpUrl';
 export { isSafeInternalPath } from './url/isSafeInternalPath';
 export { isSafeUrl } from './url/isSafeUrl';
 export { isValidDomain } from './url/isValidDomain';

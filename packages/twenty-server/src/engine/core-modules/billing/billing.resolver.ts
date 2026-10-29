@@ -143,6 +143,7 @@ export class BillingResolver {
 
     return await this.billingPortalWorkspaceService.withTrialLimitLock({
       userId: user.id,
+      userEmail: user.email,
       workspaceId: workspace.id,
       createSubscription: async (isTrialLimitReached) => {
         const isPaymentMethodRequired =
@@ -221,6 +222,7 @@ export class BillingResolver {
 
     return await this.billingPortalWorkspaceService.withTrialLimitLock({
       userId: user.id,
+      userEmail: user.email,
       workspaceId: workspace.id,
       createSubscription: (isTrialLimitReached) =>
         this.billingPortalWorkspaceService.createSubscriptionPaymentIntent({
@@ -462,10 +464,31 @@ export class BillingResolver {
     }),
     NoPermissionGuard,
   )
-  async listPlans(): Promise<BillingPlanDTO[]> {
+  async billingPlans(): Promise<BillingPlanDTO[]> {
     const plans = await this.billingPlanService.listPlans();
 
     return plans.map(formatBillingDatabaseProductToGraphqlDTO);
+  }
+
+  @Query(() => [BillingPlanDTO], {
+    deprecationReason: 'Use billingPlans instead.',
+  })
+  @UseGuards(
+    AuthPrincipalGuard({
+      userSession: {
+        standard: true,
+        impersonated: true,
+        playground: true,
+        workspaceAgnostic: false,
+      },
+      apiKey: true,
+      oauthClient: true,
+      application: true,
+    }),
+    NoPermissionGuard,
+  )
+  async listPlans(): Promise<BillingPlanDTO[]> {
+    return this.billingPlans();
   }
 
   @Mutation(() => BillingEndTrialPeriodDTO)

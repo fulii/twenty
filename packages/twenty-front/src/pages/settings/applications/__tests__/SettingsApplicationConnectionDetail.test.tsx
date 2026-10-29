@@ -34,6 +34,13 @@ jest.mock(
   }),
 );
 
+jest.mock(
+  '~/pages/settings/applications/components/SettingsApplicationConnectionMessageFolders',
+  () => ({
+    SettingsApplicationConnectionMessageFolders: () => null,
+  }),
+);
+
 jest.mock('@/settings/applications/hooks/useTriggerAppOAuth', () => ({
   useTriggerAppOAuth: jest.fn(() => ({
     triggerAppOAuth: mockTriggerAppOAuth,
@@ -152,6 +159,8 @@ describe('SettingsApplicationConnectionDetail', () => {
           lastCredentialsRefreshedAt: null,
           createdAt: '2026-05-01T00:00:00.000Z',
           updatedAt: '2026-05-01T00:00:00.000Z',
+          authFailedReason: null,
+          archivedAt: null,
         },
       ],
       loading: false,
@@ -175,6 +184,8 @@ describe('SettingsApplicationConnectionDetail', () => {
           lastCredentialsRefreshedAt: null,
           createdAt: '2026-05-01T00:00:00.000Z',
           updatedAt: '2026-05-01T00:00:00.000Z',
+          authFailedReason: null,
+          archivedAt: null,
         },
       ],
       loading: false,

@@ -59,6 +59,34 @@ const recordFilterManifestSchema = recordFilterSchema
 
 const recordObjectShape = { objectUniversalIdentifier: z.uuid() };
 
+// Connected account ids are local to a workspace; sync resolves a handle to one
+const connectedAccountReferenceShape = {
+  connectedAccountId: z.string().optional(),
+  connectedAccountHandle: z.string().trim().min(1).optional(),
+};
+
+const refineConnectedAccountReference = (
+  input: z.infer<z.ZodObject<typeof connectedAccountReferenceShape>>,
+  context: z.RefinementCtx,
+) => {
+  if (
+    isDefined(input.connectedAccountId) ===
+    isDefined(input.connectedAccountHandle)
+  ) {
+    context.addIssue({
+      code: 'custom',
+      path: ['connectedAccountHandle'],
+      message:
+        'Set exactly one of connectedAccountId and connectedAccountHandle',
+    });
+  }
+};
+
+const emailStepInputManifestSchema =
+  workflowSendEmailActionSettingsSchema.shape.input
+    .extend(connectedAccountReferenceShape)
+    .superRefine(refineConnectedAccountReference);
+
 const workflowStepManifestOptions = [
   z.strictObject({
     ...baseStepShape,
@@ -190,14 +218,30 @@ const workflowStepManifestOptions = [
                 'Record picker fields require an object universal identifier',
             });
           }
+          if (
+            (field.type === 'SELECT' || field.type === 'MULTI_SELECT') &&
+            !z
+              .uuid()
+              .safeParse(field.settings?.selectedFieldUniversalIdentifier)
+              .success
+          ) {
+            context.addIssue({
+              code: 'custom',
+              path: ['settings', 'selectedFieldUniversalIdentifier'],
+              message:
+                'Select fields require the universal identifier of the field whose options they offer',
+            });
+          }
         }),
     ),
   ),
-  stepSchema('SEND_EMAIL', workflowSendEmailActionSettingsSchema.shape.input),
-  stepSchema('DRAFT_EMAIL', workflowSendEmailActionSettingsSchema.shape.input),
+  stepSchema('SEND_EMAIL', emailStepInputManifestSchema),
+  stepSchema('DRAFT_EMAIL', emailStepInputManifestSchema),
   stepSchema(
     'CREATE_CALENDAR_EVENT',
-    workflowCreateCalendarEventActionSettingsSchema.shape.input,
+    workflowCreateCalendarEventActionSettingsSchema.shape.input
+      .extend(connectedAccountReferenceShape)
+      .superRefine(refineConnectedAccountReference),
   ),
   stepSchema(
     'AI_AGENT',
