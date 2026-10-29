@@ -11,6 +11,8 @@ mapfile -t packages < <(git diff --name-only --diff-filter=d "$base"...HEAD -- p
 for package in "${packages[@]}"; do
   (
     cd "packages/$package"
+    # Not an Nx project (twenty-apps): upstream neither lints nor formats it.
+    [[ -f project.json ]] || exit 0
     mapfile -t files < <(git diff --name-only --relative --diff-filter=d "$base"...HEAD -- . | grep -E '\.(ts|tsx|js|jsx)$' || true)
     [[ ${#files[@]} != 0 ]] || exit 0
     echo "== $package: ${#files[@]} changed files"

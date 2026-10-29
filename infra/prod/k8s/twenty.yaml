@@ -91,7 +91,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: redis
-          image: docker.io/library/redis:8.10.3-alpine@sha256:896f241f438ab6a210cfb24f573b84bea721a4cbe67f1b4fd07eb638b3b02a7b
+          image: docker.io/library/redis:8.10.3-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
           # Twenty's compose file: queued jobs must never be evicted.
           args: [--maxmemory-policy, noeviction]
           ports:
@@ -238,7 +238,7 @@ spec:
       # The server migrates the database at start; the worker waits for it, as in the compose file.
       initContainers:
         - name: wait-for-server
-          image: docker.io/library/busybox:1.38.0-musl@sha256:ea2b9914a16a4ac1981994af97b318f7c7d4db76b580c56177f08bf76f4a0be8
+          image: docker.io/library/busybox:1.38.0-musl@sha256:fec1a451896b46904ea70824d256d46cb992530a731daf78259d1967e9828523
           command: [sh, -c, 'until wget -q -T 5 -O /dev/null http://twenty-server:3000/healthz; do echo "waiting for twenty-server"; sleep 5; done']
           resources:
             requests: {cpu: 10m, memory: 16Mi}
