@@ -119,7 +119,7 @@ build() {
 # What Twenty shows as its version: the server package's, which a release
 # merge brings in.
 app_version() {
-  sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' "$infra/../packages/twenty-server/package.json" | head -n 1
+  sed -n '/^[[:space:]]*"version":/{s/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p;q;}' "$infra/../packages/twenty-server/package.json"
 }
 
 # Removes the image tags beyond the newest three of this commit's history.

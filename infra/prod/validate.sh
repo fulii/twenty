@@ -25,7 +25,9 @@ echo "ok    $base/healthz answers"
 
 # The web app is served under /twenty/, and so is what it loads.
 page=$(inside curl -fsS --max-time 20 "$base/") || fail "$base/ does not answer"
-script=$(grep -o '/twenty/assets/[^"]*\.js' <<<"$page" | head -n 1) || script=
+# No pipe into head: under pipefail grep's SIGPIPE would fail the match.
+script=
+[[ $page =~ (/twenty/assets/[^\"]*\.js) ]] && script=${BASH_REMATCH[1]}
 [[ -n $script ]] || fail "$base/ names no script under /twenty/assets/"
 inside curl -fsS --max-time 20 -o /dev/null "http://twenty-server:3000$script" || fail "$script does not load"
 echo "ok    $base/ serves the web app, and $script loads"
