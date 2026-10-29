@@ -5,6 +5,10 @@
 set -euo pipefail
 # Twenty's targets call yarn; the worker has none of its own.
 export PATH="$(git rev-parse --show-toplevel)/.codingmonkey/bin:$PATH"
+# No Nx daemon (as in setup.sh), and test runners held to the parallelism the
+# worker hands every command: one Jest worker per core ran the host out of memory.
+export NX_DAEMON=false
+workers=${CM_PARALLELISM:-2}
 base=origin/main
 npx nx affected -t typecheck --base="$base"
 mapfile -t packages < <(git diff --name-only --diff-filter=d "$base"...HEAD -- packages/ | cut -d/ -f2 | sort -u)
@@ -22,10 +26,10 @@ for package in "${packages[@]}"; do
     npx oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
     vitest_config=$(compgen -G 'vitest.config.*' || true)
     if [[ -f jest.config.mjs ]]; then
-      npx jest --config jest.config.mjs --passWithNoTests --findRelatedTests "${files[@]}"
+      npx jest --config jest.config.mjs --maxWorkers="$workers" --passWithNoTests --findRelatedTests "${files[@]}"
     elif [[ -n $vitest_config ]]; then
       # A config with a `unit` project also has browser ones, which need Playwright.
-      npx vitest related --run --passWithNoTests --config "$vitest_config" \
+      npx vitest related --run --maxWorkers="$workers" --passWithNoTests --config "$vitest_config" \
         $(grep -q "name: 'unit'" "$vitest_config" && echo --project unit) "${files[@]}"
     fi
   )
