@@ -85,7 +85,8 @@ CONTEXT=(package.json yarn.lock .yarnrc.yml tsconfig.base.json nx.json .yarn
 # is stopped after 40 minutes, about three times a cold build on zombie; there
 # are two, which the deploy's 90 minutes (.codingmonkey/config.json) hold.
 build() {
-  local sha=$1
+  local sha=$1 version
+  version=$(app_version "$sha")
   pod_up builder
   git -C "$infra/.." archive --format=tar "$sha" -- "${CONTEXT[@]}" |
     k exec -i builder -- sh -c '
@@ -111,15 +112,20 @@ build() {
       done
       echo "The image of $1 was not built in $attempts attempts" >&2
       exit 1
-    ' build "$sha" "$(image)" "$(app_version)"
+    ' build "$sha" "$(image)" "$version"
   pod_down builder
   echo "ok    built and pushed $(image)"
 }
 
-# What Twenty shows as its version: the server package's, which a release
-# merge brings in.
+# What Twenty shows as its version at a commit: the SDK package's, the one
+# package that carries the release's number (the server's has no version).
 app_version() {
-  sed -n '/^[[:space:]]*"version":/{s/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p;q;}' "$infra/../packages/twenty-server/package.json"
+  local version
+  version=$(git -C "$infra/.." show "$1:packages/twenty-sdk/package.json" |
+    node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')
+  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] ||
+    { echo "No release version in packages/twenty-sdk/package.json at $1: '$version'" >&2; return 1; }
+  echo "$version"
 }
 
 # Removes the image tags beyond the newest three of this commit's history.
