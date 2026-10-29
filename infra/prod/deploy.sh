@@ -37,9 +37,13 @@ written=$({
 running=$(k get deployment twenty-server -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null) || running=
 if [[ -n $running && $running != "$(image)" ]]; then
   k exec twenty-db-0 -c postgres -- sh -c '
+    set -e
     cd /var/lib/postgresql/data
-    [ -f "before-$1.dump" ] || { pg_dump -U twenty -Fc twenty > "before-$1.dump.part" && mv "before-$1.dump.part" "before-$1.dump"; }
-    ls -1t before-*.dump | tail -n +4 | xargs -r rm --' sh "${running##*:}"
+    if [ ! -f "before-$1.dump" ]; then
+      pg_dump -U twenty -Fc twenty > "before-$1.dump.part" || { rm -f "before-$1.dump.part"; exit 1; }
+      mv "before-$1.dump.part" "before-$1.dump"
+    fi
+    ls -1t before-*.dump | tail -n +4 | xargs -r rm -- || echo "Older dumps were not removed." >&2' sh "${running##*:}"
   echo "ok    the database of $running is in before-${running##*:}.dump"
 fi
 
