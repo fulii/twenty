@@ -4,5 +4,8 @@
 # typechecks and lint rules import.
 PATH="$PWD/.codingmonkey/bin:$PATH"
 export PATH
+# No Nx daemon: started inside the worker's sandbox it hung the build for the
+# whole setup timeout, and nothing here runs Nx twice.
+export NX_DAEMON=false
 yarn install --immutable
 npx nx run-many -t build -p twenty-shared twenty-oxlint-rules
