@@ -1,0 +1,53 @@
+{
+  "version": 6,
+  "components": {
+    "app": {
+      "paths": [
+        "**"
+      ]
+    }
+  },
+  "environments": {
+    "prod": {
+      "branch": "main",
+      "url": "https://fam.fuli.dev/twenty",
+      "deploy": {
+        "script": "infra/prod/deploy.sh",
+        "timeoutMs": 5400000,
+        "lane": "light"
+      },
+      "validate": [
+        {
+          "name": "validate",
+          "command": "infra/prod/validate.sh",
+          "lane": "light"
+        }
+      ],
+      "requiresApproval": false
+    }
+  },
+  "toolchain": [
+    "kubectl",
+    "git",
+    "curl",
+    "node",
+    "jq"
+  ],
+  "sweep": {
+    "logCommands": [
+      {
+        "name": "app",
+        "command": "out=$(kubectl --kubeconfig \"$CM_ENV_LOG_KUBECONFIG\" logs --selector 'app.kubernetes.io/name in (twenty-server,twenty-worker)' --all-containers --prefix --since=6h --tail=500 2>&1) || { printf '%s\\n' \"$out\"; exit 1; }; printf '%s\\n' \"$out\" | grep -v '^No resources found' || true"
+      },
+      {
+        "name": "warnings",
+        "command": "out=$(kubectl --kubeconfig \"$CM_ENV_LOG_KUBECONFIG\" get events --field-selector type=Warning --sort-by=.lastTimestamp 2>&1) || { printf '%s\\n' \"$out\"; exit 1; }; pods=$(kubectl --kubeconfig \"$CM_ENV_LOG_KUBECONFIG\" get pods -o json 2>&1) || { printf '%s\\n' \"$pods\"; exit 1; }; printf '%s\\n' \"$out\" | grep -v '^No resources found' || true; printf '%s\\n' \"$pods\" | jq -r '.items[] | .metadata.name as $pod | (.status.initContainerStatuses // [])[], (.status.containerStatuses // [])[] | (.state.terminated // .lastState.terminated) as $t | select($t != null and $t.reason != \"Completed\") | \"last termination: pod=\\($pod) container=\\(.name) reason=\\($t.reason // \"none\") exit=\\($t.exitCode) finishedAt=\\($t.finishedAt) restarts=\\(.restartCount)\"'"
+      },
+      {
+        "name": "resources",
+        "command": ": \"${CM_ENV_PROMETHEUS_URL:?is not set: the platform hands it where CM_K8S_PROMETHEUS_URL is set}\"; ns=${CM_ENV_NAMESPACE:?is not set}; h='[bcdfghjklmnpqrstvwxz2456789]'; wl() { printf 'label_replace(label_replace(%s, \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+?)(-[0-9]{8})?(-%s{6,10})?-%s{5}\")' \"$1\" \"$h\" \"$h\"; }; q() { out=$(curl -sS --fail-with-body --max-time 25 \"$CM_ENV_PROMETHEUS_URL/api/v1/query\" --data-urlencode \"query=$2\" 2>&1) && res=$(printf '%s\\n' \"$out\" | jq -r --arg what \"$1\" '.data.result[] | \"\\($what) \\(.metric | to_entries | map(\"\\(.key)=\\(.value)\") | join(\" \")) \\(.value[1])\"' 2>&1) || { printf '%s: %s\\n' \"$1\" \"$out\"; exit 1; }; [ -z \"$res\" ] || printf '%s\\n' \"$res\"; }; q oom_kills_24h \"round(sum by (workload, container) ($(wl \"increase(container_oom_events_total{namespace=\\\"$ns\\\",container!=\\\"\\\"}[24h])\"))) > 0\"; q memory_peak_of_limit_7d \"round(max by (workload, container) ($(wl \"max by (pod, container) (max_over_time(container_memory_working_set_bytes{namespace=\\\"$ns\\\",container!=\\\"\\\"}[7d])) / on (pod, container) max by (pod, container) (max_over_time(kube_pod_container_resource_limits{namespace=\\\"$ns\\\",resource=\\\"memory\\\"}[7d]))\")) > 0.8, 0.01)\"; q cpu_throttled_share_24h \"round(sum by (workload, container) ($(wl \"increase(container_cpu_cfs_throttled_periods_total{namespace=\\\"$ns\\\",container!=\\\"\\\"}[24h])\")) / sum by (workload, container) ($(wl \"increase(container_cpu_cfs_periods_total{namespace=\\\"$ns\\\",container!=\\\"\\\"}[24h])\")) > 0.25, 0.01)\"; q failed_jobs_24h \"count by (cronjob) (label_replace((max by (job_name) (max_over_time(kube_job_failed{namespace=\\\"$ns\\\",condition=\\\"true\\\"}[24h])) == 1 and on (job_name) max by (job_name) (max_over_time(kube_job_created{namespace=\\\"$ns\\\"}[24h])) > time() - 86400) * on (job_name) group_left (owner_name) max by (job_name, owner_name) (max_over_time(kube_job_owner{namespace=\\\"$ns\\\",owner_kind=\\\"CronJob\\\"}[24h])), \\\"cronjob\\\", \\\"\\$1\\\", \\\"owner_name\\\", \\\"(.*)\\\"))\"",
+        "timeoutMs": 120000
+      }
+    ]
+  }
+}

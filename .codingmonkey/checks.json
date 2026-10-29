@@ -1,0 +1,24 @@
+[
+  {
+    "name": "infra",
+    "command": "for f in infra/lib.sh infra/prod/*.sh .codingmonkey/*.sh .codingmonkey/bin/yarn; do bash -n \"$f\" || exit 1; done && CM_SHA=check CM_CLUSTER_REGISTRY=registry.invalid/twenty infra/prod/render.sh >/dev/null",
+    "timeoutMs": 60000,
+    "paths": [
+      "infra/**",
+      ".codingmonkey/**"
+    ]
+  },
+  {
+    "name": "packages",
+    "command": ".codingmonkey/check.sh",
+    "timeoutMs": 3600000,
+    "paths": [
+      "packages/**",
+      "package.json",
+      "yarn.lock",
+      "nx.json",
+      "tsconfig.base.json",
+      ".codingmonkey/check.sh"
+    ]
+  }
+]
