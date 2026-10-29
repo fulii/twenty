@@ -31,8 +31,9 @@ Workspace secrets, scope `deploy:prod`:
 ## Data
 
 Postgres (`twenty-db`, claim `data-twenty-db-0`) and the attachments (claim
-`twenty-storage`). deploy.sh leaves the last pre-deploy dump at
-`/var/lib/postgresql/data/before-deploy.dump` in `twenty-db-0`; zombie's
+`twenty-storage`). Before a new image starts, deploy.sh dumps the database to
+`/var/lib/postgresql/data/before-<running sha>.dump` in `twenty-db-0` (the
+newest three are kept); zombie's
 nightly `gdrive-backup` copies a dump and the files to Google Drive. To go
 back to the dump: scale `twenty-server` and `twenty-worker` to 0, then
 `pg_restore --clean --if-exists -U twenty -d twenty` it in `twenty-db-0`.

@@ -9,26 +9,16 @@
     ]
   },
   {
-    "name": "server",
-    "command": ".codingmonkey/check.sh twenty-server",
+    "name": "packages",
+    "command": ".codingmonkey/check.sh",
     "timeoutMs": 3600000,
     "paths": [
-      "packages/twenty-server/**",
-      "packages/twenty-shared/**",
-      "packages/twenty-emails/**",
-      "packages/twenty-client-sdk/**"
-    ]
-  },
-  {
-    "name": "front",
-    "command": ".codingmonkey/check.sh twenty-front",
-    "timeoutMs": 3600000,
-    "paths": [
-      "packages/twenty-front/**",
-      "packages/twenty-shared/**",
-      "packages/twenty-ui/**",
-      "packages/twenty-sdk/**",
-      "packages/twenty-front-component-renderer/**"
+      "packages/**",
+      "package.json",
+      "yarn.lock",
+      "nx.json",
+      "tsconfig.base.json",
+      ".codingmonkey/check.sh"
     ]
   }
 ]

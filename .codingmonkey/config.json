@@ -30,7 +30,8 @@
     "kubectl",
     "git",
     "curl",
-    "node"
+    "node",
+    "jq"
   ],
   "sweep": {
     "logCommands": [

@@ -32,13 +32,15 @@ written=$({
 } | k create secret generic twenty --from-env-file=/dev/stdin --dry-run=client -o yaml | k apply -f -)
 
 # The server migrates the database as it starts, and a migration is not undone
-# by rolling back: a new image starts only after a dump, which stays on the
-# database's volume until the next one.
+# by rolling back: a new image starts only after a dump named after the running
+# one. Never overwritten: a retry finds a database the failed roll migrated.
 running=$(k get deployment twenty-server -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null) || running=
 if [[ -n $running && $running != "$(image)" ]]; then
-  k exec twenty-db-0 -c postgres -- sh -c \
-    'pg_dump -U twenty -Fc twenty > /var/lib/postgresql/data/before-deploy.dump.part && mv /var/lib/postgresql/data/before-deploy.dump.part /var/lib/postgresql/data/before-deploy.dump'
-  echo "ok    dumped the database of $running"
+  k exec twenty-db-0 -c postgres -- sh -c '
+    cd /var/lib/postgresql/data
+    [ -f "before-$1.dump" ] || { pg_dump -U twenty -Fc twenty > "before-$1.dump.part" && mv "before-$1.dump.part" "before-$1.dump"; }
+    ls -1t before-*.dump | tail -n +4 | xargs -r rm --' sh "${running##*:}"
+  echo "ok    the database of $running is in before-${running##*:}.dump"
 fi
 
 manifest twenty | k apply -f - >/dev/null
