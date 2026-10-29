@@ -116,10 +116,10 @@ build() {
   echo "ok    built and pushed $(image)"
 }
 
-# What Twenty shows as its version: the server package's, which a release
-# merge brings in.
+# What Twenty shows as its version: the SDK package's, the one package that
+# carries the release's number (the server's has no version).
 app_version() {
-  sed -n '/^[[:space:]]*"version":/{s/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p;q;}' "$infra/../packages/twenty-server/package.json"
+  node -p "require('$infra/../packages/twenty-sdk/package.json').version"
 }
 
 # Removes the image tags beyond the newest three of this commit's history.
