@@ -9,6 +9,9 @@ export PATH="$(git rev-parse --show-toplevel)/.codingmonkey/bin:$PATH"
 # worker hands every command: one Jest worker per core ran the host out of memory.
 export NX_DAEMON=false
 workers=${CM_PARALLELISM:-2}
+# Jest at 16 workers over a release's ~1000 server suites got workers OOM-killed
+# on the shared host; 6 workers that recycle past 1 GB run them in under a minute.
+jest_workers=$((workers < 6 ? workers : 6))
 base=origin/main
 npx nx affected -t typecheck --base="$base"
 mapfile -t packages < <(git diff --name-only --diff-filter=d "$base"...HEAD -- packages/ | cut -d/ -f2 | sort -u)
@@ -29,9 +32,11 @@ for package in "${packages[@]}"; do
     fi
     # Generated files are in the format's ignore list.
     oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
+    # Its tests call a running Twenty server (upstream's ci-zapier.yaml starts one).
+    [[ $package != twenty-zapier ]] || exit 0
     vitest_config=$(compgen -G 'vitest.config.*' || true)
     if [[ -f jest.config.mjs ]]; then
-      jest --config jest.config.mjs --maxWorkers="$workers" --passWithNoTests --findRelatedTests "${files[@]}"
+      jest --config jest.config.mjs --maxWorkers="$jest_workers" --workerIdleMemoryLimit=1G --passWithNoTests --findRelatedTests "${files[@]}"
     elif [[ -n $vitest_config ]]; then
       # A config with a `unit` project also has browser ones, which need Playwright.
       vitest related --run --maxWorkers="$workers" --passWithNoTests --config "$vitest_config" \

@@ -52,7 +52,8 @@ The only pins of ours are the images in `infra/prod/k8s/`.
   image move together with the release. The checks run on the worker's Node,
   which must satisfy `engines.node`.
 - Validated by: the checks (`.codingmonkey/check.sh`: typecheck of every
-  affected package, lint, format and related tests of the changed files), then
+  affected package, lint, format and related tests of the changed files;
+  not `twenty-zapier`'s tests, which need a running server), then
   ship's build of the image and `infra/prod/validate.sh`. The server runs
   upstream's upgrade commands as it starts; deploy.sh dumps the database before
   a new image starts.
