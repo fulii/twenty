@@ -18,9 +18,13 @@ The only pins of ours are the images in `infra/prod/k8s/`.
 - Source: `https://github.com/twentyhq/twenty.git`, tags `twenty/v<x.y.z>`.
   No `package.json` carries the version; `main` is at the newest such tag
   that is its ancestor (`git describe --match 'twenty/v*' --abbrev=0` after
-  fetching the tags). The newest release is the highest tag: `git ls-remote
-  --tags https://github.com/twentyhq/twenty.git 'twenty/v*'`. Ignore `sdk/v*`
-  and the old `v*` tags.
+  fetching the tags) — but `describe` picks the nearest tag by commit count
+  and can name an old one, so confirm with `git merge-base --is-ancestor
+  twenty/v<x.y.z> HEAD` on the candidates. The newest release is the highest
+  tag: `git ls-remote --tags https://github.com/twentyhq/twenty.git 'twenty/v*'
+  | sort -V`. Ignore `sdk/v*` and the old `v*` tags. Fetch a tag with
+  `git fetch --no-tags https://github.com/twentyhq/twenty.git
+  'refs/tags/twenty/v<x.y.z>:refs/tags/twenty/v<x.y.z>'`.
 - Update: fetch the newest tag and **merge** it into `main`
   (`git merge --no-ff twenty/v<x.y.z>`). Never rebase and never cherry-pick:
   `main` is shared, and a merge keeps our commits as they are. One release per
@@ -38,6 +42,11 @@ The only pins of ours are the images in `infra/prod/k8s/`.
     `X-Famiglia-User` and a matching `X-Famiglia-Key` signs that person in
     (`trusted-proxy-auth` in `packages/twenty-server`), including before any
     workspace exists.
+  - Where both meet upstream: `renderFrontendHtml` (server) takes our
+    `basePath` and `extraEnv` (`REACT_APP_BASE_PATH`,
+    `REACT_APP_TRUSTED_PROXY_AUTH`) next to upstream's arguments, and
+    `FrontendService` passes them; CSS matching app links by `href` uses
+    `*=`, not `^=`, since links carry the base path.
   - `infra/` and `.codingmonkey/`, which upstream does not have.
 - Node: upstream's `.nvmrc`, `engines.node` and the Dockerfile's `node` base
   image move together with the release. The checks run on the worker's Node,
@@ -61,6 +70,10 @@ index. Each moves to the newest tag of its line (same major; for BuildKit the
 | `docker.io/library/busybox:<1.x.y>-musl` | `twenty.yaml` (storage init) | 1 | same, `library/busybox`, `name=musl` |
 | `curlimages/curl:<8.x.y>` | `client.yaml` | 8 | same, `curlimages/curl`, `name=8.` |
 | `moby/buildkit:<v0.x.y>-rootless` | `builder.yaml` | v0 | same, `moby/buildkit`, `name=rootless` |
+
+Docker Hub's `name=` filter matches substrings (`name=9.` lists `8.19.0`):
+filter the result with an anchored pattern, e.g. `grep -E '^16\.[0-9]+-trixie$'
+| sort -V`. Release candidates (`19rc1-trixie`) are not releases.
 
 Official images are rebuilt under the same tag (base-image fixes): an
 unchanged tag can still take a new digest.
