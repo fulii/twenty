@@ -32,7 +32,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: postgres
-          image: docker.io/library/postgres:16.15-trixie@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+          image: docker.io/library/postgres:16.15-trixie@sha256:01e529f5119d4a943b55567d8aaa14a71a19c07054873617b406cd5f04b91380
           env:
             - {name: POSTGRES_DB, value: twenty}
             - {name: POSTGRES_USER, value: twenty}
@@ -151,7 +151,7 @@ spec:
       # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
       initContainers:
         - name: wait-for-db
-          image: docker.io/library/postgres:16.15-trixie@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+          image: docker.io/library/postgres:16.15-trixie@sha256:01e529f5119d4a943b55567d8aaa14a71a19c07054873617b406cd5f04b91380
           command: [sh, -c, 'until pg_isready -h twenty-db -U twenty -d twenty; do echo "waiting for twenty-db"; sleep 2; done']
           resources:
             requests: {cpu: 10m, memory: 16Mi}
@@ -238,7 +238,7 @@ spec:
       # The server migrates the database at start; the worker waits for it, as in the compose file.
       initContainers:
         - name: wait-for-server
-          image: docker.io/library/busybox:1.38.0-musl@sha256:fec1a451896b46904ea70824d256d46cb992530a731daf78259d1967e9828523
+          image: docker.io/library/busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
           command: [sh, -c, 'until wget -q -T 5 -O /dev/null http://twenty-server:3000/healthz; do echo "waiting for twenty-server"; sleep 5; done']
           resources:
             requests: {cpu: 10m, memory: 16Mi}
