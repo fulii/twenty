@@ -1,13 +1,12 @@
 import { isDefined } from 'twenty-shared/utils';
 import { styled } from '@linaria/react';
-import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { LightButton } from 'twenty-ui/components/input';
 import { Button } from 'twenty-ui/primitives/input';
 import { themeCssVariables } from 'twenty-ui/theme';
 
 import { serializePlainTextAsAdvancedTextEditorDocument } from '@/advanced-text-editor/utils/serializePlainTextAsAdvancedTextEditorDocument';
-import { AiChatWelcomeAvatar } from '@/ai/components/AiChatWelcomeAvatar';
+import { AiChatAssistantAvatar } from '@/ai/components/AiChatAssistantAvatar';
 import { getAiChatSuggestedPrompts } from '@/ai/components/suggested-prompts/getAiChatSuggestedPrompts';
 import { useAiChatSuggestedPromptsContext } from '@/ai/hooks/useAiChatSuggestedPromptsContext';
 import { useStageAiChatPreprompt } from '@/ai/hooks/useStageAiChatPreprompt';
@@ -64,6 +63,7 @@ type AiChatSuggestedPromptsProps = {
 export const AiChatSuggestedPrompts = ({
   isCentered = false,
 }: AiChatSuggestedPromptsProps) => {
+  const { t } = useLingui();
   const { t: resolveMessage } = useLingui();
   const { stageAiChatPreprompt } = useStageAiChatPreprompt();
   const aiChatSuggestedPromptsContext = useAiChatSuggestedPromptsContext();
@@ -83,7 +83,7 @@ export const AiChatSuggestedPrompts = ({
 
   return (
     <StyledContainer isCentered={isCentered}>
-      {isCentered && <AiChatWelcomeAvatar />}
+      {isCentered && <AiChatAssistantAvatar size={40} />}
       <StyledTitle isCentered={isCentered}>
         {isCentered ? t`How can I help you?` : t`What can I help you with?`}
       </StyledTitle>

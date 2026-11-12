@@ -10,9 +10,8 @@ import { Process } from 'src/engine/core-modules/message-queue/decorators/proces
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { RecordAccessPolicyService } from 'src/engine/permissions/combine/services/record-access-policy.service';
-import { isUpdateOfHiddenFieldsOnly } from 'src/engine/permissions/masking/utils/is-update-of-hidden-fields-only.util';
-import { omitRestrictedFieldsFromEvent } from 'src/engine/permissions/masking/utils/omit-restricted-fields-from-event.util';
+import { type PermissionsAuthContext } from 'src/engine/permissions/principal/types/permissions-auth-context.type';
+import { RecordEventPermissionsReadService } from 'src/engine/permissions/record-event-permissions-read.service';
 import { AGENT_TRIGGER_RUN_LIMITS } from 'src/engine/metadata-modules/ai/ai-agent-trigger/constants/agent-trigger-run-limits.const';
 import { RunAgentTriggerJob } from 'src/engine/metadata-modules/ai/ai-agent-trigger/jobs/run-agent-trigger.job';
 import { AgentTriggerThrottlerService } from 'src/engine/metadata-modules/ai/ai-agent-trigger/services/agent-trigger-throttler.service';
@@ -21,8 +20,8 @@ import { findAgentDatabaseEventTriggersMatchingEvent } from 'src/engine/metadata
 import { isDatabaseEventCausedByAgent } from 'src/engine/metadata-modules/ai/ai-agent-trigger/utils/is-database-event-caused-by-agent.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { type WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
-import { filterEventsByUpdatedFields } from 'src/engine/workspace-event-emitter/utils/filter-events-by-updated-fields.util';
-import { buildPermissionsPrincipal } from 'src/engine/permissions/principal/utils/build-permissions-principal.util';
+import { buildDatabaseEventTriggerConditionFields } from 'src/engine/workspace-event-emitter/utils/build-database-event-trigger-condition-fields.util';
+import { filterEventsMatchingDatabaseEventTrigger } from 'src/engine/workspace-event-emitter/utils/filter-events-matching-database-event-trigger.util';
 
 @Processor(MessageQueue.triggerQueue)
 export class CallAgentDatabaseEventTriggersJob {
@@ -32,7 +31,7 @@ export class CallAgentDatabaseEventTriggersJob {
     @InjectMessageQueue(MessageQueue.aiQueue)
     private readonly messageQueueService: MessageQueueService,
     private readonly workspaceCacheService: WorkspaceCacheService,
-    private readonly recordAccessPolicyService: RecordAccessPolicyService,
+    private readonly recordEventPermissionsReadService: RecordEventPermissionsReadService,
     private readonly agentTriggerThrottlerService: AgentTriggerThrottlerService,
   ) {}
 
@@ -46,16 +45,14 @@ export class CallAgentDatabaseEventTriggersJob {
 
     const {
       flatAgentMaps,
+      flatApplicationMaps,
       flatRoleTargetByAgentIdMaps,
-      rolesPermissions,
       flatFieldMetadataMaps,
-      flatObjectMetadataMaps,
     } = await this.workspaceCacheService.getOrRecompute(workspaceId, [
       'flatAgentMaps',
+      'flatApplicationMaps',
       'flatRoleTargetByAgentIdMaps',
-      'rolesPermissions',
       'flatFieldMetadataMaps',
-      'flatObjectMetadataMaps',
     ]);
 
     const matchingAgentTriggers = findAgentDatabaseEventTriggersMatchingEvent({
@@ -67,56 +64,53 @@ export class CallAgentDatabaseEventTriggersJob {
       return;
     }
 
-    const eventRecordAccessGate =
-      this.recordAccessPolicyService.buildEventRecordAccessGate(
-        workspaceEventBatch,
-      );
+    const conditionFields = buildDatabaseEventTriggerConditionFields({
+      flatObjectMetadata: objectMetadata,
+      flatFieldMetadataMaps,
+    });
 
     for (const { flatAgent, trigger } of matchingAgentTriggers) {
-      const agentRoleId = flatRoleTargetByAgentIdMaps[flatAgent.id]?.roleId;
-      const agentObjectsPermissions = isDefined(agentRoleId)
-        ? rolesPermissions[agentRoleId]
-        : undefined;
+      const application = flatApplicationMaps.byId[flatAgent.applicationId];
 
-      // An agent receives what its role lets it read: without a role it reads nothing
-      if (!isDefined(agentRoleId) || !isDefined(agentObjectsPermissions)) {
+      if (!isDefined(application) || isDefined(application.deletedAt)) {
         continue;
       }
 
-      const admittedRecordIds =
-        await eventRecordAccessGate.resolveAdmittedRecordIds(
-          buildPermissionsPrincipal({
-            workspaceId: workspaceEventBatch.workspaceId,
-            roleId: agentRoleId,
-            applicationId: undefined,
-          }),
-        );
-      const admittedEvents = workspaceEventBatch.events
-        .filter((event) => admittedRecordIds.has(event.recordId))
-        .filter(
-          (event) =>
-            !isDatabaseEventCausedByAgent({
-              event,
-              eventName,
-              agentId: flatAgent.id,
-            }),
-        )
-        .map((event) =>
-          omitRestrictedFieldsFromEvent({
-            event,
-            objectMetadata,
-            objectsPermissions: agentObjectsPermissions,
-            flatObjectMetadataMaps,
-            flatFieldMetadataMaps,
-          }),
-        )
-        .filter((event) => !isUpdateOfHiddenFieldsOnly(event));
+      const agentAuthContext: PermissionsAuthContext = {
+        type: 'application',
+        workspace: { id: workspaceId },
+        application,
+        agentId: flatAgent.id,
+      };
+      const readableEvents =
+        await this.recordEventPermissionsReadService.filterReadableEvents({
+          authContext: agentAuthContext,
+          eventBatch: workspaceEventBatch,
+          // Masking can drop the actor fields, so the agent's own writes are skipped first
+          events: workspaceEventBatch.events.filter(
+            (event) =>
+              !isDatabaseEventCausedByAgent({
+                event,
+                eventName,
+                agentId: flatAgent.id,
+              }),
+          ),
+        });
 
-      const eventsToRunOn = filterEventsByUpdatedFields({
-        events: admittedEvents,
-        eventName,
-        watchedFields: trigger.settings.updatedFields,
-      });
+      const { events: eventsToRunOn, conditionErrorMessage } =
+        filterEventsMatchingDatabaseEventTrigger({
+          events: readableEvents,
+          eventName,
+          watchedFields: trigger.settings.updatedFields,
+          condition: trigger.settings.condition,
+          fields: conditionFields,
+        });
+
+      if (isDefined(conditionErrorMessage)) {
+        this.logger.warn(
+          `Condition of trigger ${trigger.id} on agent ${flatAgent.id} in workspace ${workspaceId} failed to evaluate: ${conditionErrorMessage}`,
+        );
+      }
 
       if (eventsToRunOn.length === 0) {
         continue;
@@ -153,7 +147,7 @@ export class CallAgentDatabaseEventTriggersJob {
             workspaceId,
             agentId: flatAgent.id,
             triggerId: trigger.id,
-            dispatchedRoleId: agentRoleId,
+            dispatchedRoleId: flatRoleTargetByAgentIdMaps[flatAgent.id]?.roleId,
             payload: {
               type: 'DATABASE_EVENT',
               eventName,

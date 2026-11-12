@@ -71,6 +71,7 @@ const buildFlatAgent = (
   id: `${universalIdentifier}-id`,
   workspaceId: WORKSPACE_ID,
   applicationId: APP_ID,
+  navigationMenuItemIds: [],
   ...overrides,
 });
 
@@ -118,6 +119,7 @@ const buildFlatRoleTarget = ({
     roleId: `${roleUniversalIdentifier}-id`,
     agentId: `${agentUniversalIdentifier}-id`,
     webhookId: null,
+    targetApplicationId: null,
   };
 };
 

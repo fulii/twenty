@@ -53,6 +53,7 @@ export default defineView({
 | `isCompact`                                                                                                 | `boolean`                                                                                   | عرض الصفوف بشكل مضغوط.                                                                                                                                                                          |
 | `mainGroupByFieldMetadataUniversalIdentifier` + `shouldHideEmptyGroups`                                     | —                                                                                           | تجميع السجلات (مثل أعمدة كانبان) حسب حقل معيّن.                                                                                                                                                 |
 | `groupLoadLimit`                                                                                            | `8` (افتراضي)، `25`، `50`، `100`                                                            | عدد السجلات التي تُحمَّل لكل مجموعة قبل "تحميل المزيد"، في عروض الجدول والقائمة المُجمَّعة. تقوم لوحات كانبان بتقسيم الصفحات حسب حجمها الخاص وتتجاهله.                                          |
+| `shouldDisplayGroupsAsTabs`                                                                                 | `boolean`                                                                                   | عرض المجموعات كعلامات تبويب، مجموعة واحدة في كل مرة، في طرق عرض الجدول والقائمة المجمعة.                                                                                                        |
 | `kanbanAggregateOperation`, `kanbanAggregateOperationFieldMetadataUniversalIdentifier`, `kanbanColumnWidth` | `AggregateOperations.*`                                                                     | تجميعات وأحجام أعمدة كانبان.                                                                                                                                                                    |
 | `calendarLayout`, `calendarFieldMetadataUniversalIdentifier`, `calendarEndFieldMetadataUniversalIdentifier` | `ViewCalendarLayout.DAY` / `WEEK` / `MONTH`                                                 | عروض التقويم: التخطيط، حقل التاريخ الذي يحدد موضع السجلات، وحقل تاريخ انتهاء اختياري.                                                                                                           |
 
@@ -87,21 +88,22 @@ filters: [
 
 ### المعاملات المدعومة حسب نوع الحقل
 
-| نوع الحقل                                                                                          | العوامل المدعومة                                                                                                   |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `TEXT`, `EMAILS`, `FULL_NAME`, `ADDRESS`, `LINKS`, `PHONES`, `RAW_JSON`, `FILES`, `ACTOR`, `ARRAY` | `CONTAINS`, `DOES_NOT_CONTAIN`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                         |
-| `ACTOR.source`, `ACTOR.workspaceMemberId`                                                          | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
-| `SELECT`                                                                                           | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
-| `MULTI_SELECT`                                                                                     | `CONTAINS`, `DOES_NOT_CONTAIN`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                         |
-| `RELATION`                                                                                         | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
-| `NUMBER`                                                                                           | `IS`, `IS_NOT`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS_EMPTY`, `IS_NOT_EMPTY`                          |
-| `RATING`                                                                                           | `IS`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS_EMPTY`, `IS_NOT_EMPTY`                                    |
-| `CURRENCY`, `CURRENCY.amountMicros`                                                                | `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                          |
-| `CURRENCY.currencyCode`                                                                            | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
-| `DATE`, `DATE_TIME`                                                                                | `IS`, `IS_RELATIVE`, `IS_IN_PAST`, `IS_IN_FUTURE`, `IS_TODAY`, `IS_BEFORE`, `IS_AFTER`, `IS_EMPTY`, `IS_NOT_EMPTY` |
-| `BOOLEAN`                                                                                          | `IS`                                                                                                               |
-| `UUID`                                                                                             | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
-| `TS_VECTOR`                                                                                        | `VECTOR_SEARCH`                                                                                                    |
+| نوع الحقل                                                                                 | العوامل المدعومة                                                                                                   |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `TEXT`                                                                                    | `CONTAINS`، `DOES_NOT_CONTAIN`، `IS`، `IS_NOT`، `IS_EMPTY`، `IS_NOT_EMPTY`                                         |
+| `EMAILS`، `FUL_NAME`، `ADDRESS`، `LINKS`، `PHONES`، `RAW_JSON`، `FILES`، `ACTOR`، `ARRAY` | `CONTAINS`, `DOES_NOT_CONTAIN`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                         |
+| `ACTOR.source`, `ACTOR.workspaceMemberId`                                                 | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
+| `SELECT`                                                                                  | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
+| `MULTI_SELECT`                                                                            | `CONTAINS`, `DOES_NOT_CONTAIN`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                         |
+| `RELATION`                                                                                | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
+| `NUMBER`                                                                                  | `IS`, `IS_NOT`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS_EMPTY`, `IS_NOT_EMPTY`                          |
+| `RATING`                                                                                  | `IS`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS_EMPTY`, `IS_NOT_EMPTY`                                    |
+| `CURRENCY`, `CURRENCY.amountMicros`                                                       | `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                          |
+| `CURRENCY.currencyCode`                                                                   | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
+| `DATE`, `DATE_TIME`                                                                       | `IS`, `IS_RELATIVE`, `IS_IN_PAST`, `IS_IN_FUTURE`, `IS_TODAY`, `IS_BEFORE`, `IS_AFTER`, `IS_EMPTY`, `IS_NOT_EMPTY` |
+| `BOOLEAN`                                                                                 | `IS`                                                                                                               |
+| `UUID`                                                                                    | `IS`, `IS_NOT`, `IS_EMPTY`, `IS_NOT_EMPTY`                                                                         |
+| `TS_VECTOR`                                                                               | `VECTOR_SEARCH`                                                                                                    |
 
 > يمكن لأنواع الحقول ذات الأسماء المتشابهة أن تستخدم عوامل مختلفة تمامًا — حيث يُعد `SELECT` و`MULTI_SELECT` حالة شائعة.
 
@@ -115,6 +117,7 @@ filters: [
 | `CONTAINS`, `DOES_NOT_CONTAIN` على `MULTI_SELECT`       | مصفوفة من مفاتيح الخيارات (سلاسل نصية) | `['TAG_A']`              |
 | `IS`, `IS_NOT` على `RELATION`                           | مصفوفة من معرّفات السجلات (uuids)      | `['c5a1...']`            |
 | `CONTAINS`, `DOES_NOT_CONTAIN` على الحقول المشابهة للنص | سلسلة نصية                             | `'acme'`                 |
+| `IS`, `IS_NOT` في `TEXT`                                | سلسلة (دقيقة، حساسة لحالة الأحرف)      | `Acme'`                  |
 | `IS`, `IS_NOT` على `NUMBER`                             | سلسلة نصية (القيمة)                    | `'5'`                    |
 | `IS` على `RATING` / `UUID`                              | سلسلة نصية (القيمة)                    | `'5'`                    |
 | `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`           | سلسلة نصية (الحد)                      | `'10'`                   |

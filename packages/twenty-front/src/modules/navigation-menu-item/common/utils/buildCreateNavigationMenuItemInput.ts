@@ -33,6 +33,9 @@ export const buildCreateNavigationMenuItemInput = (
   } else if (isNavigationMenuItemObject(draftItem)) {
     input.targetObjectMetadataId =
       draftItem.targetObjectMetadataId ?? undefined;
+  } else if (isDefined(draftItem.nativePageKey)) {
+    input.nativePageKey = draftItem.nativePageKey;
+    input.name = draftItem.name ?? undefined;
   } else if (isDefined(draftItem.pageLayoutId)) {
     input.pageLayoutId = draftItem.pageLayoutId;
     input.name = draftItem.name ?? undefined;
@@ -43,6 +46,12 @@ export const buildCreateNavigationMenuItemInput = (
     input.targetRecordId = draftItem.targetRecordId;
     input.targetObjectMetadataId =
       draftItem.targetObjectMetadataId ?? undefined;
+  } else if (isDefined(draftItem.workflowId)) {
+    input.workflowId = draftItem.workflowId;
+    input.name = draftItem.name ?? undefined;
+  } else if (isDefined(draftItem.agentId)) {
+    input.agentId = draftItem.agentId;
+    input.name = draftItem.name ?? undefined;
   }
 
   if (isDefined(draftItem.folderId)) {

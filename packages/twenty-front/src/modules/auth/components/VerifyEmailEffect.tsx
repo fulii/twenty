@@ -88,8 +88,10 @@ export const VerifyEmailEffect = ({ onError }: VerifyEmailEffectProps) => {
 
         const workspaceUrl = getWorkspaceUrl(workspaceUrls);
         if (new URL(workspaceUrl).origin !== window.location.origin) {
-          return await redirectToWorkspaceDomain(workspaceUrl, AppPath.Verify, {
-            loginToken: loginToken.token,
+          return await redirectToWorkspaceDomain({
+            baseUrl: workspaceUrl,
+            pathname: AppPath.Verify,
+            searchParams: { loginToken: loginToken.token },
           });
         }
 

@@ -11,9 +11,11 @@ import { isDefined } from 'twenty-sdk/utils';
 import { LINKEDIN_ATTACHMENT_DEADLINE_MARGIN_MILLISECONDS } from 'src/constants/linkedin-attachment-deadline-margin-milliseconds.constant';
 import { LINKEDIN_IMPORT_HISTORY_TIMEOUT_SECONDS } from 'src/constants/linkedin-import-history-timeout-seconds.constant';
 import { LINKEDIN_IMPORT_HISTORY_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { type LinkedinCounterpartResolver } from 'src/logic-functions/types/linkedin-counterpart-resolver.type';
 import { type LinkedinHistoryImportProgress } from 'src/logic-functions/types/linkedin-history-import-progress.type';
 import { type LinkedinImportHistoryJobPayload } from 'src/logic-functions/types/linkedin-import-history-job-payload.type';
 import { type LinkedinIngestResult } from 'src/logic-functions/types/linkedin-ingest-result.type';
+import { createLinkedinCounterpartResolver } from 'src/logic-functions/utils/create-linkedin-counterpart-resolver.util';
 import { enqueueLinkedinImportHistoryJob } from 'src/logic-functions/utils/enqueue-linkedin-import-history-job.util';
 import { failLinkedinHistoryImportJob } from 'src/logic-functions/utils/fail-linkedin-history-import-job.util';
 import { getActiveLinkedinHistoryImportState } from 'src/logic-functions/utils/get-active-linkedin-history-import-state.util';
@@ -21,12 +23,12 @@ import { getLinkedinChatCounterparts } from 'src/logic-functions/utils/get-linke
 import { getLinkedinImportHistoryJobId } from 'src/logic-functions/utils/get-linkedin-history-import-job-id.util';
 import { getLinkedinSettings } from 'src/logic-functions/utils/get-linkedin-settings.util';
 import { ingestLinkedinMessages } from 'src/logic-functions/utils/ingest-linkedin-messages.util';
+import { setLinkedinAccountOwnerAvatar } from 'src/logic-functions/utils/set-linkedin-account-owner-avatar.util';
 import {
   getLinkedinHistoryImportChunkChats,
   getLinkedinHistoryImportProgress,
   saveLinkedinHistoryImportProgress,
 } from 'src/logic-functions/utils/linkedin-history-import-kv.util';
-import { withLinkedinPublicIdentifier } from 'src/logic-functions/utils/with-linkedin-public-identifier.util';
 import { type LinkedinSettings } from 'src/types/linkedin-settings.type';
 import { type UnipileChat } from 'src/unipile/types/unipile-chat.type';
 import { getUnipileChat } from 'src/unipile/utils/get-unipile-chat.util';
@@ -189,11 +191,13 @@ export const linkedinImportHistoryHandler = async (
     unipileAccountId,
     channel,
     settings,
+    resolveCounterpart,
   }: {
     listedChat: UnipileChat;
     unipileAccountId: string;
     channel: AppMessageChannel;
     settings: LinkedinSettings;
+    resolveCounterpart: LinkedinCounterpartResolver;
   }): Promise<void> => {
     const chat =
       getLinkedinChatCounterparts(listedChat).length > 0
@@ -202,11 +206,7 @@ export const linkedinImportHistoryHandler = async (
             accountId: unipileAccountId,
             chatId: listedChat.id,
           });
-    const counterparts = await Promise.all(
-      getLinkedinChatCounterparts(chat).map((user) =>
-        withLinkedinPublicIdentifier({ unipileAccountId, user }),
-      ),
-    );
+    const counterparts = getLinkedinChatCounterparts(chat);
     const seenCursors = new Set<string>();
 
     do {
@@ -229,6 +229,7 @@ export const linkedinImportHistoryHandler = async (
         settings,
         chat,
         counterparts,
+        resolveCounterpart,
         messages: page.items,
       });
 
@@ -280,10 +281,26 @@ export const linkedinImportHistoryHandler = async (
       );
     }
 
+    if (chunkIndex === 0 && !isDefined(payload.resumeIndex)) {
+      await setLinkedinAccountOwnerAvatar({
+        unipileAccountId,
+        channelHandle: channel.handle,
+        deadlineAtMs: attachmentDeadlineAtMs,
+      });
+    }
+
     const settings = await getLinkedinSettings(connectedAccountId);
+    const resolveCounterpart =
+      createLinkedinCounterpartResolver(unipileAccountId);
 
     for (const listedChat of chats.slice(processedChatCount)) {
-      await importChat({ listedChat, unipileAccountId, channel, settings });
+      await importChat({
+        listedChat,
+        unipileAccountId,
+        channel,
+        settings,
+        resolveCounterpart,
+      });
     }
   } catch (error) {
     if (error instanceof LinkedinImportHistoryHandOff) {

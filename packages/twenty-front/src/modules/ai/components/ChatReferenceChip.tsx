@@ -4,6 +4,7 @@ import { useContext } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Chip } from 'twenty-ui/primitives/data-display';
 
+import { StyledChatReferenceChipContainer } from '@/ai/components/StyledChatReferenceChipContainer';
 import { ChatReferenceNavigationEnabledContext } from '@/ai/contexts/ChatReferenceNavigationEnabledContext';
 import { useChatReferenceTarget } from '@/ai/hooks/useChatReferenceTarget';
 import { type ChatReferenceMatch } from '@/ai/types/ChatReferenceMatch';
@@ -22,20 +23,24 @@ export const ChatReferenceChip = ({ reference }: ChatReferenceChipProps) => {
 
   if (!isDefined(target.to) || !isNavigationEnabled) {
     return (
-      <Chip variant="soft" startElement={target.leftComponent}>
-        {getChipLabel(reference.displayName).content}
-      </Chip>
+      <StyledChatReferenceChipContainer>
+        <Chip variant="soft" startElement={target.leftComponent}>
+          {getChipLabel(reference.displayName).content}
+        </Chip>
+      </StyledChatReferenceChipContainer>
     );
   }
 
   return (
-    <LinkChip
-      to={target.to}
-      onClick={target.onClick}
-      variant="soft"
-      startElement={target.leftComponent}
-    >
-      {getChipLabel(reference.displayName).content}
-    </LinkChip>
+    <StyledChatReferenceChipContainer>
+      <LinkChip
+        to={target.to}
+        onClick={target.onClick}
+        variant="soft"
+        startElement={target.leftComponent}
+      >
+        {getChipLabel(reference.displayName).content}
+      </LinkChip>
+    </StyledChatReferenceChipContainer>
   );
 };

@@ -25,8 +25,14 @@ export const fromRowLevelPermissionPredicateGroupManifestToUniversalFlatRowLevel
       parentRowLevelPermissionPredicateGroupUniversalIdentifier:
         rowLevelPermissionPredicateGroupManifest.parentPredicateGroupUniversalIdentifier ??
         null,
+      rowLevelPermissionRuleUniversalIdentifier: null,
       positionInRowLevelPermissionPredicateGroup:
         rowLevelPermissionPredicateGroupManifest.position ?? null,
+      canReadRecords: false,
+      canCreateRecords: false,
+      canUpdateRecords: false,
+      canSoftDeleteRecords: false,
+      canDestroyRecords: false,
       childRowLevelPermissionPredicateGroupUniversalIdentifiers: [],
       rowLevelPermissionPredicateUniversalIdentifiers: [],
       createdAt: now,

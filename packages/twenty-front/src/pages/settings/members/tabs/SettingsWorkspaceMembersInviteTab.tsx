@@ -114,7 +114,9 @@ export const SettingsWorkspaceMembersInviteTab = () => {
 
   const getExpiresAtText = (expiresAt: string) => {
     const expirationDate = new Date(expiresAt);
-    if (expirationDate.getTime() <= Date.now()) return t`Expired`;
+    if (expirationDate.getTime() <= Date.now()) {
+      return t`Expired`;
+    }
     return formatDistanceToNow(expirationDate, { locale: localeCatalog });
   };
 
