@@ -33,8 +33,12 @@ for package in "${packages[@]}"; do
       # Type-aware only where the package's own lint is.
       oxlint $(grep -qs -- --type-aware project.json && echo --type-aware) -c .oxlintrc.json "${files[@]}"
     fi
-    # Generated files are in the format's ignore list.
-    oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
+    # Generated files are in the format's ignore list. A package whose own fmt
+    # is Prettier (twenty-agent-skills, twenty-docs) is not format-checked by
+    # upstream's CI, and v2.58.0 ships one of its files unformatted.
+    if ! grep -qs '"command": "prettier' project.json; then
+      oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
+    fi
     # Its tests call a running Twenty server (upstream's ci-zapier.yaml starts one).
     [[ $package != twenty-zapier ]] || exit 0
     vitest_config=$(compgen -G 'vitest.config.*' || true)
