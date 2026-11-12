@@ -32,7 +32,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: postgres
-          image: docker.io/library/postgres:16.15-trixie@sha256:01e529f5119d4a943b55567d8aaa14a71a19c07054873617b406cd5f04b91380
+          image: docker.io/library/postgres:16.15-trixie@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
           env:
             - {name: POSTGRES_DB, value: twenty}
             - {name: POSTGRES_USER, value: twenty}
@@ -91,7 +91,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: redis
-          image: docker.io/library/redis:8.10.3-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+          image: docker.io/library/redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
           # Twenty's compose file: queued jobs must never be evicted.
           args: [--maxmemory-policy, noeviction]
           ports:
@@ -151,7 +151,7 @@ spec:
       # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
       initContainers:
         - name: wait-for-db
-          image: docker.io/library/postgres:16.15-trixie@sha256:01e529f5119d4a943b55567d8aaa14a71a19c07054873617b406cd5f04b91380
+          image: docker.io/library/postgres:16.15-trixie@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
           command: [sh, -c, 'until pg_isready -h twenty-db -U twenty -d twenty; do echo "waiting for twenty-db"; sleep 2; done']
           resources:
             requests: {cpu: 10m, memory: 16Mi}
