@@ -13,7 +13,10 @@ workers=${CM_PARALLELISM:-2}
 # on the shared host; 6 workers that recycle past 1 GB run them in under a minute.
 jest_workers=$((workers < 6 ? workers : 6))
 base=origin/main
-npx nx affected -t typecheck --base="$base"
+# One at a time and without emitting: twenty-server's tsgo peaks near 4 GB
+# (over 9 GB when it also writes declarations), and beside twenty-front's it
+# was OOM-killed on the shared host.
+npx nx affected -t typecheck --base="$base" --noEmit --parallel=1
 mapfile -t packages < <(git diff --name-only --diff-filter=d "$base"...HEAD -- packages/ | cut -d/ -f2 | sort -u)
 for package in "${packages[@]}"; do
   (
