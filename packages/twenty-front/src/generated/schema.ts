@@ -60,6 +60,7 @@ export type CoreWorkflowConnection = {
   __typename?: 'CoreWorkflowConnection';
   edges: Array<CoreWorkflowEdge>;
   pageInfo: CoreWorkflowPageInfo;
+  runSummaries: Array<CoreWorkflowRunSummary>;
   totalCount: Scalars['Int']['output'];
 };
 
@@ -79,10 +80,28 @@ export type CoreWorkflowDto = {
   workspaceWorkflowId?: Maybe<Scalars['UUID']['output']>;
 };
 
+export type CoreWorkflowDailyRunCount = {
+  __typename?: 'CoreWorkflowDailyRunCount';
+  completedRunCount: Scalars['Int']['output'];
+  /** Day in the requested time zone, as YYYY-MM-DD */
+  day: Scalars['String']['output'];
+  failedRunCount: Scalars['Int']['output'];
+  /** Runs neither completed nor failed, such as running or stopped */
+  otherRunCount: Scalars['Int']['output'];
+};
+
 export type CoreWorkflowEdge = {
   __typename?: 'CoreWorkflowEdge';
   cursor: Scalars['String']['output'];
   node: CoreWorkflowDto;
+};
+
+export type CoreWorkflowFailedRun = {
+  __typename?: 'CoreWorkflowFailedRun';
+  createdAt: Scalars['String']['output'];
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
 };
 
 export enum CoreWorkflowFilterFieldKey {
@@ -138,6 +157,50 @@ export type CoreWorkflowPageInfo = {
   __typename?: 'CoreWorkflowPageInfo';
   endCursor?: Maybe<Scalars['String']['output']>;
   hasNextPage: Scalars['Boolean']['output'];
+};
+
+export type CoreWorkflowRecentRun = {
+  __typename?: 'CoreWorkflowRecentRun';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['UUID']['output'];
+  status: CoreWorkflowRunStatus;
+};
+
+export type CoreWorkflowRunInsights = {
+  __typename?: 'CoreWorkflowRunInsights';
+  /** Average duration of completed runs over the same 14 days */
+  averageDurationInMs?: Maybe<Scalars['Float']['output']>;
+  coreWorkflowId: Scalars['UUID']['output'];
+  /** One entry per calendar day of the last 14 days in the requested time zone, oldest first */
+  dailyRunCounts: Array<CoreWorkflowDailyRunCount>;
+  /** Failed runs over the same 14 days */
+  failedRunCount: Scalars['Int']['output'];
+  /** True when run retention may have deleted runs from the window, so the counts are lower bounds */
+  isRunCountLowerBound: Scalars['Boolean']['output'];
+  /** Most recent failed runs first */
+  recentFailedRuns: Array<CoreWorkflowFailedRun>;
+  /** Runs over the last 14 days, the same window as the workflows list run count */
+  runCount: Scalars['Int']['output'];
+};
+
+export enum CoreWorkflowRunStatus {
+  COMPLETED = 'COMPLETED',
+  ENQUEUED = 'ENQUEUED',
+  FAILED = 'FAILED',
+  NOT_STARTED = 'NOT_STARTED',
+  RUNNING = 'RUNNING',
+  STOPPED = 'STOPPED',
+  STOPPING = 'STOPPING'
+}
+
+export type CoreWorkflowRunSummary = {
+  __typename?: 'CoreWorkflowRunSummary';
+  coreWorkflowId: Scalars['UUID']['output'];
+  /** True when run retention may have deleted runs from the window, so runCountLast14Days is a lower bound */
+  isRunCountLowerBound: Scalars['Boolean']['output'];
+  /** Most recent runs first */
+  recentRuns: Array<CoreWorkflowRecentRun>;
+  runCountLast14Days: Scalars['Int']['output'];
 };
 
 export enum CoreWorkflowStatus {
@@ -360,6 +423,34 @@ export type LinksMetadata = {
   secondaryLinks?: Maybe<Array<LinkMetadata>>;
 };
 
+export type LogicFunctionExecutionResult = {
+  __typename?: 'LogicFunctionExecutionResult';
+  /** Execution result in JSON format */
+  data?: Maybe<Scalars['JSON']['output']>;
+  /** Execution duration in milliseconds */
+  duration: Scalars['Float']['output'];
+  /** Execution error in JSON format */
+  error?: Maybe<Scalars['JSON']['output']>;
+  /** Execution Logs */
+  logs: Scalars['String']['output'];
+  /** Execution status */
+  status: LogicFunctionExecutionStatus;
+};
+
+/** Status of the logic function execution */
+export enum LogicFunctionExecutionStatus {
+  ERROR = 'ERROR',
+  IDLE = 'IDLE',
+  SUCCESS = 'SUCCESS'
+}
+
+export enum MessageChannelType {
+  APP = 'APP',
+  EMAIL = 'EMAIL',
+  EMAIL_GROUP = 'EMAIL_GROUP',
+  SMS = 'SMS'
+}
+
 export enum MessageChannelVisibility {
   METADATA = 'METADATA',
   SHARE_EVERYTHING = 'SHARE_EVERYTHING',
@@ -390,6 +481,7 @@ export type Mutation = {
   stopWorkflowRun: WorkflowRun;
   submitFormStep: Scalars['Boolean']['output'];
   testHttpRequest: TestHttpRequest;
+  testWorkflowCodeStep: LogicFunctionExecutionResult;
   updateCoreWorkflow?: Maybe<CoreWorkflowDto>;
   updateCoreWorkflowVersionPositions: Scalars['Boolean']['output'];
   updateCoreWorkflowVersionStep: WorkflowAction;
@@ -504,6 +596,11 @@ export type MutationTestHttpRequestArgs = {
 };
 
 
+export type MutationTestWorkflowCodeStepArgs = {
+  input: TestWorkflowCodeStepInput;
+};
+
+
 export type MutationUpdateCoreWorkflowArgs = {
   input: UpdateCoreWorkflowInput;
 };
@@ -547,6 +644,7 @@ export type Query = {
   __typename?: 'Query';
   coreWorkflow?: Maybe<CoreWorkflowDto>;
   coreWorkflowById?: Maybe<CoreWorkflowDto>;
+  coreWorkflowRunInsights?: Maybe<CoreWorkflowRunInsights>;
   coreWorkflowVersion?: Maybe<CoreWorkflowVersionDto>;
   coreWorkflowVersionById?: Maybe<CoreWorkflowVersionDto>;
   coreWorkflowVersions: Array<CoreWorkflowVersionDto>;
@@ -555,6 +653,7 @@ export type Query = {
   coreWorkflowsWithCurrentVersions: Array<CoreWorkflowWithCurrentVersionDto>;
   dpaAgreements: Array<DpaAgreement>;
   dpaPreview: DpaDocument;
+  getMessageThreadChannel?: Maybe<TimelineThreadChannel>;
   /** @deprecated Use getTimelineCalendarEventsFromObjectRecord instead */
   getTimelineCalendarEventsFromCompanyId: TimelineCalendarEventsWithTotal;
   getTimelineCalendarEventsFromObjectRecord: TimelineCalendarEventsWithTotal;
@@ -573,6 +672,7 @@ export type Query = {
   search: SearchResultConnection;
   searchTimelineCalendarEvents: TimelineCalendarEventSearchResult;
   searchTimelineThreads: TimelineThreadSearchResult;
+  workflowCodeStepAvailablePackages: Scalars['JSON']['output'];
   workflowStepConnectedAccountHandle?: Maybe<ConnectedAccountHandleDto>;
 };
 
@@ -584,6 +684,12 @@ export type QueryCoreWorkflowArgs = {
 
 export type QueryCoreWorkflowByIdArgs = {
   coreWorkflowId: Scalars['UUID']['input'];
+};
+
+
+export type QueryCoreWorkflowRunInsightsArgs = {
+  coreWorkflowId: Scalars['UUID']['input'];
+  timeZone: Scalars['String']['input'];
 };
 
 
@@ -618,6 +724,11 @@ export type QueryCoreWorkflowsArgs = {
 
 export type QueryCoreWorkflowsWithCurrentVersionsArgs = {
   input: CoreWorkflowsWithCurrentVersionsInput;
+};
+
+
+export type QueryGetMessageThreadChannelArgs = {
+  messageThreadId: Scalars['UUID']['input'];
 };
 
 
@@ -700,6 +811,11 @@ export type QuerySearchTimelineThreadsArgs = {
   objectNameSingular: Scalars['String']['input'];
   recordId: Scalars['UUID']['input'];
   searchInput?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryWorkflowCodeStepAvailablePackagesArgs = {
+  workflowVersionId: Scalars['UUID']['input'];
 };
 
 
@@ -788,6 +904,15 @@ export type TestHttpRequestInput = {
   url: Scalars['String']['input'];
 };
 
+export type TestWorkflowCodeStepInput = {
+  /** TypeScript source of the code step */
+  code: Scalars['String']['input'];
+  /** Payload in JSON format */
+  payload: Scalars['JSON']['input'];
+  /** Workflow version the code step belongs to */
+  workflowVersionId: Scalars['UUID']['input'];
+};
+
 export type TimelineCalendarEvent = {
   __typename?: 'TimelineCalendarEvent';
   callRecordings: Array<TimelineCalendarEventCallRecording>;
@@ -838,6 +963,7 @@ export type TimelineCalendarEventsWithTotal = {
 
 export type TimelineThread = {
   __typename?: 'TimelineThread';
+  channel?: Maybe<TimelineThreadChannel>;
   firstParticipant: TimelineThreadParticipant;
   id: Scalars['UUID']['output'];
   lastMessageBody: Scalars['String']['output'];
@@ -849,6 +975,14 @@ export type TimelineThread = {
   read: Scalars['Boolean']['output'];
   subject: Scalars['String']['output'];
   visibility: MessageChannelVisibility;
+};
+
+export type TimelineThreadChannel = {
+  __typename?: 'TimelineThreadChannel';
+  applicationId?: Maybe<Scalars['UUID']['output']>;
+  conversationStyle?: Maybe<Scalars['String']['output']>;
+  provider: Scalars['String']['output'];
+  type: MessageChannelType;
 };
 
 export type TimelineThreadParticipant = {
@@ -952,6 +1086,7 @@ export enum WorkflowActionType {
   IF_ELSE = 'IF_ELSE',
   ITERATOR = 'ITERATOR',
   LOGIC_FUNCTION = 'LOGIC_FUNCTION',
+  MCP_TOOL = 'MCP_TOOL',
   PICK_RECORD = 'PICK_RECORD',
   SEND_CHAT_MESSAGE = 'SEND_CHAT_MESSAGE',
   SEND_EMAIL = 'SEND_EMAIL',
@@ -991,8 +1126,8 @@ export type WorkflowStepPositionInput = {
 export type WorkflowStepPositionUpdateInput = {
   /** Step or trigger ID */
   id: Scalars['String']['input'];
-  /** Position of the step or trigger */
-  position: WorkflowStepPositionInput;
+  /** Position of the step or trigger, null to remove it */
+  position?: InputMaybe<WorkflowStepPositionInput>;
 };
 
 export type WorkflowVersionStepChanges = {

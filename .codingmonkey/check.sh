@@ -13,7 +13,10 @@ workers=${CM_PARALLELISM:-2}
 # on the shared host; 6 workers that recycle past 1 GB run them in under a minute.
 jest_workers=$((workers < 6 ? workers : 6))
 base=origin/main
-npx nx affected -t typecheck --base="$base"
+# One at a time and without emitting: twenty-server's tsgo peaks near 4 GB
+# (over 9 GB when it also writes declarations), and beside twenty-front's it
+# was OOM-killed on the shared host.
+npx nx affected -t typecheck --base="$base" --noEmit --parallel=1
 mapfile -t packages < <(git diff --name-only --diff-filter=d "$base"...HEAD -- packages/ | cut -d/ -f2 | sort -u)
 for package in "${packages[@]}"; do
   (
@@ -30,13 +33,26 @@ for package in "${packages[@]}"; do
       # Type-aware only where the package's own lint is.
       oxlint $(grep -qs -- --type-aware project.json && echo --type-aware) -c .oxlintrc.json "${files[@]}"
     fi
-    # Generated files are in the format's ignore list.
-    oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
+    # Generated files are in the format's ignore list. A package whose own fmt
+    # is Prettier (twenty-agent-skills, twenty-docs) is not format-checked by
+    # upstream's CI, and v2.58.0 ships one of its files unformatted.
+    if ! grep -qs '"command": "prettier' project.json; then
+      oxfmt --check --no-error-on-unmatched-pattern "${files[@]}"
+    fi
     # Its tests call a running Twenty server (upstream's ci-zapier.yaml starts one).
     [[ $package != twenty-zapier ]] || exit 0
     vitest_config=$(compgen -G 'vitest.config.*' || true)
     if [[ -f jest.config.mjs ]]; then
-      jest --config jest.config.mjs --maxWorkers="$jest_workers" --workerIdleMemoryLimit=1G --passWithNoTests --findRelatedTests "${files[@]}"
+      results=$(mktemp)
+      if ! jest --config jest.config.mjs --maxWorkers="$jest_workers" --workerIdleMemoryLimit=1G --passWithNoTests \
+        --json --outputFile="$results" --findRelatedTests "${files[@]}"; then
+        # Suites bound by wall time (a 10 s build limit, spawned processes) time
+        # out when the shared host is loaded; each failed suite reruns once alone.
+        mapfile -t failed < <(node -e 'for (const r of JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).testResults) if (r.status === "failed") console.log(r.name)' "$results")
+        [[ ${#failed[@]} != 0 ]] || exit 1
+        echo "== $package: rerunning ${#failed[@]} failed suites in band"
+        jest --config jest.config.mjs --runInBand --runTestsByPath "${failed[@]}"
+      fi
     elif [[ -n $vitest_config ]]; then
       # A config with a `unit` project also has browser ones, which need Playwright.
       vitest related --run --maxWorkers="$workers" --passWithNoTests --config "$vitest_config" \

@@ -46,14 +46,22 @@ The only pins of ours are the images in `infra/prod/k8s/`.
     `basePath` and `extraEnv` (`REACT_APP_BASE_PATH`,
     `REACT_APP_TRUSTED_PROXY_AUTH`) next to upstream's arguments, and
     `FrontendService` passes them; CSS matching app links by `href` uses
-    `*=`, not `^=`, since links carry the base path.
+    `*=`, not `^=`, since links carry the base path. Workspace URLs:
+    `buildWorkspaceUrl` (`domain-manager/utils`) joins the pathname onto the
+    workspace URL's own path, `useRedirectToDefaultDomain` onto `BASE_PATH`,
+    redirect callers pass `getAppPathname()`, and a workspace URL is compared
+    with the current page by `new URL(url).origin`, never by slicing it.
   - `infra/` and `.codingmonkey/`, which upstream does not have.
 - Node: upstream's `.nvmrc`, `engines.node` and the Dockerfile's `node` base
   image move together with the release. The checks run on the worker's Node,
   which must satisfy `engines.node`.
 - Validated by: the checks (`.codingmonkey/check.sh`: typecheck of every
-  affected package, lint, format and related tests of the changed files;
-  not `twenty-zapier`'s tests, which need a running server), then
+  affected package, one at a time and with `--noEmit` to stay in the shared
+  host's memory; lint, format and related tests of the changed files, a Jest
+  suite that fails rerun once on its own (upstream's wall-time-bound suites
+  time out when the shared host is loaded); not
+  `twenty-zapier`'s tests, which need a running server, nor the format of
+  packages whose own `fmt` is Prettier, which upstream's CI never runs), then
   ship's build of the image and `infra/prod/validate.sh`. The server runs
   upstream's upgrade commands as it starts; deploy.sh dumps the database before
   a new image starts.

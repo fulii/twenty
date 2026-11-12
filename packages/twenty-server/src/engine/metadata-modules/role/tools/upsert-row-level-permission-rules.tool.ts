@@ -1,5 +1,4 @@
 import { ToolCategory } from 'twenty-shared/ai';
-import { PermissionFlagType } from 'twenty-shared/constants';
 import {
   RowLevelPermissionPredicateGroupLogicalOperator,
   RowLevelPermissionPredicateOperand,
@@ -10,6 +9,7 @@ import { DefineTool } from 'src/engine/core-modules/tool-provider/decorators/def
 import { BaseTool } from 'src/engine/core-modules/tool-provider/interfaces/base-tool.interface';
 import { type ToolExecuteArgs } from 'src/engine/core-modules/tool-provider/types/tool-execute-args.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
+import { ROLE_WRITE_ACCESS_POLICY } from 'src/engine/metadata-modules/role/constants/role-write-access-policy.constant';
 import { RowLevelPermissionPredicateService } from 'src/engine/metadata-modules/row-level-permission-predicate/services/row-level-permission-predicate.service';
 
 const predicateValueSchema = z
@@ -108,17 +108,48 @@ const upsertRowLevelPermissionRulesInputSchema = z.object({
     .describe(
       'The complete list of predicate groups to keep for this role and object. Existing groups omitted from the list are deleted.',
     ),
+  canReadRecords: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether members with this role can read the records the rules match',
+    ),
+  canCreateRecords: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether members with this role can create records the rules match',
+    ),
+  canUpdateRecords: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether members with this role can update the records the rules match',
+    ),
+  canSoftDeleteRecords: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether members with this role can soft delete the records the rules match',
+    ),
+  canDestroyRecords: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether members with this role can permanently delete the records the rules match',
+    ),
 });
 
 @DefineTool({
   name: 'upsert_row_level_permission_rules',
   category: ToolCategory.ROLE,
-  requiredPermissionFlags: [PermissionFlagType.ROLES],
+  accessPolicy: ROLE_WRITE_ACCESS_POLICY,
   description: `Set row-level permission rules restricting which records members with a role can see on a given object (enterprise feature).
 
 Example, "members with this role only see records where the owner field matches the current user": pass one predicate with fieldMetadataId = the owner field on the object, operand = IS, and workspaceMemberFieldMetadataId = the "id" field of the workspaceMember object (resolved to the current user at query time). Use metadata tools to look up field ids.
 The same works between relations: for "only records in my region", pass fieldMetadataId = a many-to-one relation on the object and workspaceMemberFieldMetadataId = a many-to-one relation on workspaceMember pointing at the same object, with operand IS.
 Combine several predicates with predicateGroups (AND / OR): give each new group a client-generated UUID and reference it from predicates via rowLevelPermissionPredicateGroupId.
+Grants: the rules only open access through canReadRecords, canUpdateRecords, etc. An object-level permission granting all records on this object wins over the rules, so turn it off for the operations the rules should restrict.
 IMPORTANT: this replaces the full rule set for the role + object. Predicates or groups omitted from the lists are deleted; empty lists clear all rules. System-managed roles (like Admin) cannot be changed.`,
 })
 export class UpsertRowLevelPermissionRulesTool extends BaseTool<
@@ -150,6 +181,11 @@ export class UpsertRowLevelPermissionRulesTool extends BaseTool<
               ...predicateGroup,
               objectMetadataId: input.objectMetadataId,
             })),
+            canCreateRecords: input.canCreateRecords,
+            canReadRecords: input.canReadRecords,
+            canUpdateRecords: input.canUpdateRecords,
+            canSoftDeleteRecords: input.canSoftDeleteRecords,
+            canDestroyRecords: input.canDestroyRecords,
           },
         },
       );

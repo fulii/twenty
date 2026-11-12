@@ -29,6 +29,8 @@ const STEP_BY_PAGE: Partial<Record<string, Step>> = {
   [VIEW_OBJECT_PAGE]: 'view',
   record: 'record',
   page: 'page',
+  nativePage: 'nativePage',
+  automation: 'automation',
 };
 
 type NavigationMenuItemAddDropdownContentProps = {
@@ -85,6 +87,8 @@ export const NavigationMenuItemAddDropdownContent = ({
   };
   const {
     getItems,
+    automationItemGroups,
+    automationLoading,
     standalonePagesLoading,
     standalonePagesError,
     recordSearchLoading,
@@ -111,6 +115,8 @@ export const NavigationMenuItemAddDropdownContent = ({
     view: t`View`,
     record: t`Record`,
     page: t`Page`,
+    nativePage: t`Native page`,
+    automation: t`Automations`,
   };
 
   const normalizedSearch = normalizeSearchText(search.trim());
@@ -118,11 +124,20 @@ export const NavigationMenuItemAddDropdownContent = ({
     (item.searchableValues ?? [item.label]).some((value) =>
       normalizeSearchText(value).includes(normalizedSearch),
     );
-  const groups = isSearchingAllItems
-    ? [
+  const getGroups = () => {
+    if (isSearchingAllItems) {
+      return [
         { label: t`Objects`, items: getItems('object').filter(matchesSearch) },
         { label: t`Views`, items: getItems('view').filter(matchesSearch) },
         { label: t`Pages`, items: getItems('page').filter(matchesSearch) },
+        {
+          label: t`Native pages`,
+          items: getItems('nativePage').filter(matchesSearch),
+        },
+        {
+          label: t`Automations`,
+          items: getItems('automation').filter(matchesSearch),
+        },
         {
           label: t`Records`,
           items: isSearchDebouncing ? [] : getItems('record'),
@@ -135,15 +150,27 @@ export const NavigationMenuItemAddDropdownContent = ({
               matchesSearch(item),
           ),
         },
-      ]
-    : [
-        {
-          label: '',
-          items: getItems().filter(
-            (item) => step === 'record' || matchesSearch(item),
-          ),
-        },
       ];
+    }
+
+    if (step === 'automation') {
+      return automationItemGroups.map((group) => ({
+        label: group.label,
+        items: group.items.filter(matchesSearch),
+      }));
+    }
+
+    return [
+      {
+        label: '',
+        items: getItems().filter(
+          (item) => step === 'record' || matchesSearch(item),
+        ),
+      },
+    ];
+  };
+
+  const groups = getGroups();
   const items = groups.flatMap((group) => group.items);
   const getEmptyMessage = () => {
     if (step === 'page' && isDefined(standalonePagesError)) {
@@ -158,6 +185,10 @@ export const NavigationMenuItemAddDropdownContent = ({
     }
 
     if ((step === 'page' || isSearchingAllItems) && standalonePagesLoading) {
+      return t`Loading...`;
+    }
+
+    if ((step === 'automation' || isSearchingAllItems) && automationLoading) {
       return t`Loading...`;
     }
 

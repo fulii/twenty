@@ -1,6 +1,7 @@
 import { styled } from '@linaria/react';
 import { useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
+import { getWorkspaceAvatarColorSeed } from '@/workspace/utils/getWorkspaceAvatarColorSeed';
 import { Avatar } from 'twenty-ui/primitives/data-display';
 import { IconRefresh } from 'twenty-ui/icon';
 import { useTheme, themeCssVariables } from 'twenty-ui/theme';
@@ -9,6 +10,8 @@ import { BASE_PATH } from '~/config';
 type AppConnectionHeaderProps = {
   appLogoUrl?: string | null;
   appName: string;
+  workspaceLogoUrl?: string | null;
+  workspaceName?: string | null;
 };
 
 const StyledContainer = styled.div`
@@ -30,7 +33,21 @@ const StyledAppLogoTile = styled.div`
   height: ${themeCssVariables.spacing[12]};
   justify-content: center;
   padding: ${themeCssVariables.spacing[1]};
+  position: relative;
   width: ${themeCssVariables.spacing[12]};
+`;
+
+const StyledWorkspaceLogoContainer = styled.div`
+  align-items: center;
+  background-color: ${themeCssVariables.background.primary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  bottom: calc(-1 * ${themeCssVariables.spacing[2]});
+  display: flex;
+  height: ${themeCssVariables.spacing[7]};
+  justify-content: center;
+  position: absolute;
+  right: calc(-1 * ${themeCssVariables.spacing[2]});
+  width: ${themeCssVariables.spacing[7]};
 `;
 
 const StyledAppLogo = styled.img`
@@ -57,6 +74,8 @@ const StyledLinkIconContainer = styled.div`
 export const AppConnectionHeader = ({
   appLogoUrl,
   appName,
+  workspaceLogoUrl,
+  workspaceName,
 }: AppConnectionHeaderProps) => {
   const theme = useTheme();
 
@@ -71,6 +90,17 @@ export const AppConnectionHeader = ({
           src={`${BASE_PATH}/images/integrations/twenty-logo.svg`}
           alt=""
         />
+        {isNonEmptyString(workspaceName) && (
+          <StyledWorkspaceLogoContainer>
+            <Avatar
+              size="lg"
+              name={workspaceName}
+              colorSeed={getWorkspaceAvatarColorSeed(workspaceName)}
+              shape="square"
+              src={workspaceLogoUrl}
+            />
+          </StyledWorkspaceLogoContainer>
+        )}
       </StyledAppLogoTile>
       <StyledLinkIconContainer aria-hidden>
         <IconRefresh size={theme.icon.size.md} stroke={theme.icon.stroke.lg} />

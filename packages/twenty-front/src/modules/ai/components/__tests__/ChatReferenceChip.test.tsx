@@ -195,7 +195,7 @@ const renderWithReferences = (
       store.set(currentUserWorkspaceState.atom, {
         permissionFlags,
         twoFactorAuthenticationMethodSummary: [],
-        objectsPermissions: [],
+        objectRecordsPermissions: [],
       });
       store.set(
         shouldOpenAiChatAfterOnboardingState.atom,
@@ -463,5 +463,14 @@ describe('TextWithChatReferences', () => {
     expect(screen.getByText(/Sort by/)).toHaveTextContent(
       'Sort by Stage first',
     );
+  });
+
+  it('should keep the written assistant name when navigation is disabled', () => {
+    renderWithReferences(
+      <TextWithChatReferences text="Ask [[record:agentChatAssistant:agentChatAssistant:Scout]] today" />,
+      { isNavigationEnabled: false },
+    );
+
+    expect(screen.getByText(/Ask/)).toHaveTextContent('Ask @Scout today');
   });
 });

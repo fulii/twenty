@@ -14,6 +14,7 @@ const buildFlatNavigationMenuItem = (
     universalIdentifier: VALID_UUID,
     name: null,
     link: null,
+    nativePageKey: null,
     icon: null,
     color: null,
     position: 0,
@@ -75,6 +76,24 @@ describe('validateNavigationMenuItemTypeRequiredProperties', () => {
         'A valid pageLayoutUniversalIdentifier is required for PAGE_LAYOUT type',
       ],
     },
+    {
+      type: NavigationMenuItemType.NATIVE_PAGE,
+      expectedMessages: [
+        'A valid nativePageKey is required for NATIVE_PAGE type',
+      ],
+    },
+    {
+      type: NavigationMenuItemType.WORKFLOW,
+      expectedMessages: [
+        'A valid workflowUniversalIdentifier is required for WORKFLOW type',
+      ],
+    },
+    {
+      type: NavigationMenuItemType.AGENT,
+      expectedMessages: [
+        'A valid agentUniversalIdentifier is required for AGENT type',
+      ],
+    },
   ])(
     'should report every missing property for $type type',
     ({ type, expectedMessages }) => {
@@ -118,6 +137,18 @@ describe('validateNavigationMenuItemTypeRequiredProperties', () => {
       type: NavigationMenuItemType.PAGE_LAYOUT,
       overrides: { pageLayoutUniversalIdentifier: VALID_UUID },
     },
+    {
+      type: NavigationMenuItemType.NATIVE_PAGE,
+      overrides: { nativePageKey: 'workflows' as const },
+    },
+    {
+      type: NavigationMenuItemType.WORKFLOW,
+      overrides: { workflowUniversalIdentifier: VALID_UUID },
+    },
+    {
+      type: NavigationMenuItemType.AGENT,
+      overrides: { agentUniversalIdentifier: VALID_UUID },
+    },
   ])(
     'should not report any error when $type type properties are valid',
     ({ type, overrides }) => {
@@ -131,6 +162,20 @@ describe('validateNavigationMenuItemTypeRequiredProperties', () => {
       expect(errors).toEqual([]);
     },
   );
+
+  it('should report an error when the native page key is unknown', () => {
+    const errors = validateNavigationMenuItemTypeRequiredProperties({
+      flatNavigationMenuItem: buildFlatNavigationMenuItem({
+        type: NavigationMenuItemType.NATIVE_PAGE,
+        nativePageKey:
+          'settings' as UniversalFlatNavigationMenuItem['nativePageKey'],
+      }),
+    });
+
+    expect(errors.map(({ message }) => message)).toEqual([
+      'A valid nativePageKey is required for NATIVE_PAGE type',
+    ]);
+  });
 
   it('should return an error when type is unknown', () => {
     const errors = validateNavigationMenuItemTypeRequiredProperties({

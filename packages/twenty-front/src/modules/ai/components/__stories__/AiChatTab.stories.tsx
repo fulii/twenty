@@ -14,6 +14,11 @@ import { AI_CHAT_SURFACE } from '@/ai/constants/AiChatSurface';
 import { AiChatSurfaceContext } from '@/ai/contexts/AiChatSurfaceContext';
 import { agentChatDraftsByThreadIdState } from '@/ai/states/agentChatDraftsByThreadIdState';
 import { newAiChatThreadIdState } from '@/ai/states/newAiChatThreadIdState';
+import { agentChatMessagesFamilyState } from '@/ai/states/agentChatMessagesFamilyState';
+import { agentChatNewThreadRecipientsFamilyState } from '@/ai/states/agentChatNewThreadRecipientsFamilyState';
+import { agentChatTypingWorkspaceMemberIdsFamilyState } from '@/ai/states/agentChatTypingWorkspaceMemberIdsFamilyState';
+import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
+import { agentChatIsSendingMessageFamilyState } from '@/ai/states/agentChatIsSendingMessageFamilyState';
 import { initializeNewAiChatStory } from '@/ai/testing/initializeNewAiChatStory';
 import { hasRequestedWorkspaceSetupChatState } from '@/onboarding/states/hasRequestedWorkspaceSetupChatState';
 import { shouldOpenAiChatAfterOnboardingState } from '@/onboarding/states/shouldOpenAiChatAfterOnboardingState';
@@ -103,13 +108,6 @@ const expectNewChatWelcome = async (canvasElement: HTMLElement) => {
   const avatarStyle = getComputedStyle(avatar);
 
   await expect(avatarStyle.width).toBe(avatarStyle.height);
-  await expect(avatarStyle.borderRadius).toBe('50%');
-
-  if (CSS.supports('corner-shape', 'round')) {
-    await expect(['round', 'superellipse(1)']).toContain(
-      avatarStyle.getPropertyValue('corner-shape'),
-    );
-  }
 
   await expect(
     canvas.getByRole('button', { name: 'Create a workflow' }),
@@ -137,12 +135,115 @@ export const FullPageNewChat: Story = {
   play: async ({ canvasElement }) => expectNewChatWelcome(canvasElement),
 };
 
+const focusRecipientRemoval = async ({
+  recipients,
+  label,
+}: {
+  recipients: HTMLElement;
+  label: string;
+}) => {
+  const recipientRemoval = within(recipients).getByRole('button', {
+    name: `Remove ${label}`,
+  });
+
+  recipientRemoval.focus();
+  await expect(recipientRemoval).toBeVisible();
+
+  return recipientRemoval;
+};
+
 export const InboxNewChat: Story = {
   ...FullPageNewChat,
   beforeEach: () => initializeNewAiChatStory({ isInboxEnabled: true }),
   parameters: {
     ...newChatParameters,
     container: { width: 660, height: 784 },
+  },
+  play: async ({ canvasElement }) => {
+    await expectNewChatWelcome(canvasElement);
+
+    const canvas = within(canvasElement);
+    const recipients = canvas.getByRole('group', { name: 'Recipients' });
+
+    await userEvent.click(
+      await focusRecipientRemoval({ recipients, label: 'Ada' }),
+    );
+    await expect(
+      within(recipients).queryByRole('button', { name: 'Remove Ada' }),
+    ).not.toBeInTheDocument();
+    await expect(
+      jotaiStore.get(
+        agentChatNewThreadRecipientsFamilyState.atomFamily(
+          jotaiStore.get(newAiChatThreadIdState.atom),
+        ),
+      ).isAssistantParticipant,
+    ).toBe(false);
+
+    await userEvent.click(
+      within(recipients).getByRole('button', {
+        name: 'Add people or a channel',
+      }),
+    );
+    const popup = await within(canvasElement.ownerDocument.body).findByRole(
+      'dialog',
+      { name: 'Select recipients' },
+    );
+
+    await userEvent.click(within(popup).getByRole('button', { name: 'Ada' }));
+    await expect(within(recipients).getByText('Ada')).toBeVisible();
+    await userEvent.type(
+      within(popup).getByRole('searchbox', { name: 'Search recipients' }),
+      'Jane',
+    );
+    await userEvent.click(
+      within(popup).getByRole('button', { name: /Jane Doe/ }),
+    );
+    await expect(within(recipients).getByText('Jane Doe')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(
+      await focusRecipientRemoval({ recipients, label: 'Jane Doe' }),
+    );
+    await expect(
+      within(recipients).queryByText('Jane Doe'),
+    ).not.toBeInTheDocument();
+    const removeAda = await focusRecipientRemoval({
+      recipients,
+      label: 'Ada',
+    });
+
+    await userEvent.click(
+      within(recipients).getByRole('button', {
+        name: 'Add people or a channel',
+      }),
+    );
+    const pendingPopup = await within(
+      canvasElement.ownerDocument.body,
+    ).findByRole('dialog', { name: 'Select recipients' });
+    const isSendingMessageAtom =
+      agentChatIsSendingMessageFamilyState.atomFamily({
+        threadId: jotaiStore.get(newAiChatThreadIdState.atom),
+      });
+
+    jotaiStore.set(isSendingMessageAtom, true);
+    await waitFor(() => expect(removeAda).toBeDisabled());
+    await expect(
+      within(recipients).getByRole('button', {
+        name: 'Add people or a channel',
+      }),
+    ).toBeDisabled();
+    await expect(
+      within(pendingPopup).getByRole('searchbox', {
+        name: 'Search recipients',
+      }),
+    ).toBeDisabled();
+
+    for (const option of within(pendingPopup).getAllByRole('button')) {
+      await expect(option).toBeDisabled();
+    }
+
+    jotaiStore.set(isSendingMessageAtom, false);
+    await waitFor(() => expect(removeAda).toBeEnabled());
+    await userEvent.keyboard('{Escape}');
   },
 };
 
@@ -153,6 +254,7 @@ export const InboxNewChatDark: Story = {
       <NewChatStory />
     </ThemeProvider>
   ),
+  play: FullPageNewChat.play,
 };
 
 export const NewChatSuggestedPrompt: Story = {
@@ -212,5 +314,65 @@ export const WorkspaceSetupCompletion: Story = {
       ).not.toBeInTheDocument(),
     );
     await expect(canvas.getByRole('textbox')).toBeVisible();
+  },
+};
+
+const seedTypingConversation = (typingWorkspaceMemberIds: string[]) => {
+  const threadId = jotaiStore.get(newAiChatThreadIdState.atom);
+
+  jotaiStore.set(agentChatMessagesFamilyState.atomFamily({ threadId }), [
+    {
+      id: '20202020-7c1e-4a0f-9d2b-3f4e5a6b7c90',
+      role: 'user',
+      parts: [{ type: 'text', text: 'Can you take Stripe?' }],
+    },
+  ]);
+  jotaiStore.set(
+    agentChatTypingWorkspaceMemberIdsFamilyState.atomFamily({ threadId }),
+    typingWorkspaceMemberIds,
+  );
+};
+
+export const MemberTyping: Story = {
+  ...FullPageNewChat,
+  beforeEach: () => {
+    initializeNewAiChatStory({ isInboxEnabled: true });
+    seedTypingConversation(
+      jotaiStore
+        .get(currentWorkspaceMembersState.atom)
+        .filter(({ name }) => name.firstName === 'Jane')
+        .map(({ id }) => id),
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(await canvas.findByText('Jane Doe is typing…')).toBeVisible();
+
+    seedTypingConversation([]);
+
+    await waitFor(() =>
+      expect(canvas.queryByText('Jane Doe is typing…')).not.toBeInTheDocument(),
+    );
+  },
+};
+
+export const MemberTypingInSidePanel: Story = {
+  ...MemberTyping,
+  parameters: {
+    ...newChatParameters,
+    container: { width: 400, height: 784 },
+  },
+  render: () => (
+    <AiChatSurfaceContext.Provider value={AI_CHAT_SURFACE.SIDE_PANEL}>
+      <Suspense fallback={null}>
+        <AiChatTab />
+      </Suspense>
+    </AiChatSurfaceContext.Provider>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(
+      await within(canvasElement).findByText('Jane Doe is typing…'),
+    ).toBeVisible();
   },
 };

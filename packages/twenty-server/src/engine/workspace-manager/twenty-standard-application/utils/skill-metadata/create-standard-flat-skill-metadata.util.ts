@@ -42,7 +42,27 @@ You help users create and manage automation workflows.
 - **Triggers**: DATABASE_EVENT, MANUAL, CRON, WEBHOOK
 - **Steps**: CREATE_RECORD, SEND_EMAIL, CODE, LOGIC_FUNCTION, PICK_RECORD, CLASSIFY, etc.
 - **Data flow**: Use {{stepId.fieldName}} to reference previous step outputs
-- **Relationships**: Use nested objects like {"company": {"id": "{{reference}}"}}
+- **Relationships**: Set a relation by its foreign key, e.g. {"companyId": "{{reference}}"}. In UPDATE_RECORD, list that same key (companyId) in fieldsToUpdate
+
+## Linking Emails, Events, Notes and Tasks to Records
+
+Emails, calendar events, notes and tasks have no company, person or opportunity field. Each link is a separate junction record:
+
+| Linked item    | Junction object           | Parent key            |
+| -------------- | ------------------------- | --------------------- |
+| Email thread   | \`messageThreadTarget\`   | \`messageThreadId\`   |
+| Calendar event | \`calendarEventTarget\`   | \`calendarEventId\`   |
+| Note           | \`noteTarget\`            | \`noteId\`            |
+| Task           | \`taskTarget\`            | \`taskId\`            |
+
+Each junction has one foreign key per linkable object: \`targetCompanyId\`, \`targetPersonId\`, \`targetOpportunityId\`. Set exactly one. Custom objects add a \`target<ObjectName>Id\` key on \`noteTarget\` and \`taskTarget\` only. Check the junction's metadata for exact field names.
+
+To link, use CREATE_RECORD on the junction. Linking to several records means one junction record each:
+{ "objectName": "noteTarget", "objectRecord": { "noteId": "...", "targetCompanyId": "..." } }
+
+To react to a link, trigger on \`<junction>.created\`. The same keys are on {{trigger.properties.after}}. Email and calendar sync also create \`messageThreadTarget\` and \`calendarEventTarget\` records automatically (\`isManuallyAssigned\` false), so filter on \`isManuallyAssigned\` when only links made by a user should count.
+
+Not to be confused with \`attachment\`, which stores files.
 
 ## CRON Trigger Settings Schema
 
@@ -1382,7 +1402,8 @@ Example: { "objectNameSingular": "opportunity", "type": "KANBAN", "name": "Pipel
 
 | Field Type | Available Operators |
 |---|---|
-| TEXT, EMAILS, FULL_NAME, ADDRESS, LINKS, PHONES | CONTAINS, DOES_NOT_CONTAIN, IS_EMPTY, IS_NOT_EMPTY |
+| TEXT | CONTAINS, DOES_NOT_CONTAIN, IS, IS_NOT, IS_EMPTY, IS_NOT_EMPTY |
+| EMAILS, FULL_NAME, ADDRESS, LINKS, PHONES | CONTAINS, DOES_NOT_CONTAIN, IS_EMPTY, IS_NOT_EMPTY |
 | NUMBER, NUMERIC | IS, IS_NOT, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL, IS_EMPTY, IS_NOT_EMPTY |
 | CURRENCY | GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL, IS_EMPTY, IS_NOT_EMPTY |
 | DATE, DATE_TIME | IS, IS_RELATIVE, IS_IN_PAST, IS_IN_FUTURE, IS_TODAY, IS_BEFORE, IS_AFTER, IS_EMPTY, IS_NOT_EMPTY |

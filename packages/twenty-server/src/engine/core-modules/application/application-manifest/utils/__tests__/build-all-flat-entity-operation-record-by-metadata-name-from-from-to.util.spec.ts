@@ -1,3 +1,4 @@
+import { isDefined } from 'twenty-shared/utils';
 import {
   CommandMenuItemAvailabilityType,
   NavigationMenuItemType,
@@ -12,6 +13,7 @@ import { type AllFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/
 import { addFlatEntityToFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/add-flat-entity-to-flat-entity-maps-or-throw.util';
 import { type FlatAgent } from 'src/engine/metadata-modules/flat-agent/types/flat-agent.type';
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
+import { type FlatObjectPermission } from 'src/engine/metadata-modules/flat-object-permission/types/flat-object-permission.type';
 import { type FlatNavigationMenuItem } from 'src/engine/metadata-modules/flat-navigation-menu-item/types/flat-navigation-menu-item.type';
 import { type FlatPageLayout } from 'src/engine/metadata-modules/flat-page-layout/types/flat-page-layout.type';
 import { type FlatRole } from 'src/engine/metadata-modules/flat-role/types/flat-role.type';
@@ -59,6 +61,8 @@ const ROLE_TARGET: FlatRoleTarget = {
   apiKeyId: null,
   webhookId: null,
   webhookUniversalIdentifier: null,
+  targetApplicationId: null,
+  targetApplicationUniversalIdentifier: null,
 };
 
 const WEBHOOK: FlatWebhook = {
@@ -94,6 +98,7 @@ const COMMAND_MENU_ITEM: FlatCommandMenuItem = {
   hotKeys: null,
   conditionalAvailabilityExpression: null,
   conditionalPinnedExpression: null,
+  availabilityCoreObjectName: null,
   availabilityObjectMetadataId: null,
   availabilityObjectMetadataUniversalIdentifier: null,
   navigationTargetObjectMetadataId: null,
@@ -116,6 +121,7 @@ const NAVIGATION_MENU_ITEM: FlatNavigationMenuItem = {
   type: NavigationMenuItemType.LINK,
   name: 'App link',
   link: 'https://example.com',
+  nativePageKey: null,
   icon: null,
   color: null,
   folderId: null,
@@ -124,6 +130,10 @@ const NAVIGATION_MENU_ITEM: FlatNavigationMenuItem = {
   pageLayoutUniversalIdentifier: null,
   agentChatChannelId: null,
   agentChatChannelUniversalIdentifier: null,
+  workflowId: null,
+  workflowUniversalIdentifier: null,
+  agentId: null,
+  agentUniversalIdentifier: null,
   position: 0,
 };
 
@@ -137,6 +147,8 @@ const AGENT: FlatAgent = {
   name: 'researcher',
   label: 'Researcher',
   icon: null,
+  avatarColor: null,
+  avatarShape: null,
   description: null,
   prompt: 'Research the company',
   modelId: 'auto',
@@ -146,6 +158,8 @@ const AGENT: FlatAgent = {
   isSystem: true,
   isActive: true,
   overrides: null,
+  navigationMenuItemIds: [],
+  navigationMenuItemUniversalIdentifiers: [],
   deletedAt: null,
 };
 
@@ -306,6 +320,38 @@ describe('buildAllFlatEntityOperationRecordByMetadataNameFromFromTo', () => {
     expect(result.role?.flatEntityToDelete).toBeUndefined();
   });
 
+  it.each([
+    ['keeps', false],
+    ['deletes', true],
+  ])(
+    '%s the permissions of a role whose editability is %s',
+    (_, isEditable) => {
+      const objectPermission = {
+        ...SYNCABLE,
+        id: 'object-permission-id',
+        universalIdentifier: 'object-permission-universal-identifier',
+        roleUniversalIdentifier: ROLE.universalIdentifier,
+        objectMetadataUniversalIdentifier: 'object-universal-identifier',
+      } as FlatObjectPermission;
+
+      const result = inferDeletionOf((allFlatEntityMaps) => ({
+        ...withRole({ ...ROLE, isEditable })(allFlatEntityMaps),
+        flatObjectPermissionMaps: addFlatEntityToFlatEntityMapsOrThrow({
+          flatEntity: objectPermission,
+          flatEntityMaps: allFlatEntityMaps.flatObjectPermissionMaps,
+        }),
+      }));
+
+      expect(
+        isDefined(
+          result.objectPermission?.flatEntityToDelete?.[
+            objectPermission.universalIdentifier
+          ],
+        ),
+      ).toBe(isEditable);
+    },
+  );
+
   it('still deletes an editable role', () => {
     const result = inferDeletionOf(withRole(ROLE));
 
@@ -391,6 +437,20 @@ describe('buildAllFlatEntityOperationRecordByMetadataNameFromFromTo', () => {
     expect(result.navigationMenuItem?.flatEntityToDelete).toBeUndefined();
   });
 
+  it.each([
+    ['workflow', { workflowId: 'a-workflow-id' }],
+    ['agent', { agentId: 'an-agent-id' }],
+  ])(
+    'does not delete a %s pinned navigation item the manifest cannot express',
+    (_, pinnedTarget) => {
+      const result = inferDeletionOf(
+        withNavigationMenuItem({ ...NAVIGATION_MENU_ITEM, ...pinnedTarget }),
+      );
+
+      expect(result.navigationMenuItem?.flatEntityToDelete).toBeUndefined();
+    },
+  );
+
   it('still deletes a workspace navigation item', () => {
     const result = inferDeletionOf(
       withNavigationMenuItem(NAVIGATION_MENU_ITEM),
@@ -437,6 +497,25 @@ describe('buildAllFlatEntityOperationRecordByMetadataNameFromFromTo', () => {
         isFirstTabPinned: false,
       },
     });
+  });
+
+  it('keeps a role assignable to applications when its manifest is synced back', () => {
+    const buildAllFlatEntityMapsWithRole = (flatRole: FlatRole) =>
+      withRole(flatRole)(createEmptyAllFlatEntityMaps());
+
+    const result = buildAllFlatEntityOperationRecordByMetadataNameFromFromTo({
+      fromAllFlatEntityMaps: buildAllFlatEntityMapsWithRole({
+        ...ROLE,
+        canBeAssignedToApplications: true,
+      }),
+      toAllUniversalFlatEntityMaps: buildAllFlatEntityMapsWithRole({
+        ...ROLE,
+        canBeAssignedToApplications: false,
+      }),
+      buildOptions: BUILD_OPTIONS,
+    });
+
+    expect(result).toEqual({});
   });
 
   it('uses the app default when creating a layout', () => {

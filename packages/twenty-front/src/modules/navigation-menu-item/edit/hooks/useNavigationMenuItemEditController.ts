@@ -1,6 +1,9 @@
 import { type NavigationMenuItemSection } from '@/navigation-menu-item/common/types/NavigationMenuItemSection';
 import { useLingui } from '@lingui/react/macro';
-import { type NavigationMenuItemType } from 'twenty-shared/types';
+import {
+  type NavigationMenuItemType,
+  type NativePageKey,
+} from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { v4 } from 'uuid';
 import { type NavigationMenuItem } from '~/generated-metadata/graphql';
@@ -20,11 +23,14 @@ export type NewNavigationMenuItemInput = {
   targetObjectMetadataId?: string | null;
   viewId?: string | null;
   pageLayoutId?: string | null;
+  workflowId?: string | null;
+  agentId?: string | null;
   icon?: string | null;
   targetRecordId?: string | null;
   targetRecordIdentifier?: NavigationMenuItem['targetRecordIdentifier'];
   name?: string | null;
   link?: string | null;
+  nativePageKey?: NativePageKey | null;
   color?: string | null;
 };
 
@@ -88,9 +94,12 @@ export const useNavigationMenuItemEditController = (
       targetRecordIdentifier: input.targetRecordIdentifier,
       viewId: input.viewId ?? undefined,
       pageLayoutId: input.pageLayoutId ?? undefined,
+      workflowId: input.workflowId ?? undefined,
+      agentId: input.agentId ?? undefined,
       icon: input.icon ?? undefined,
       name: input.name ?? undefined,
       link: input.link ?? undefined,
+      nativePageKey: input.nativePageKey ?? undefined,
       color: input.color ?? undefined,
       applicationId: undefined,
       createdAt: new Date().toISOString(),

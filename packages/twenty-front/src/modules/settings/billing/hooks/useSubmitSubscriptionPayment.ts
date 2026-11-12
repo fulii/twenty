@@ -1,7 +1,6 @@
 import { getToastOptionsFromError } from '@/error-handler/utils/getToastOptionsFromError';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { useMutation } from '@apollo/client/react';
-import { t } from '@lingui/core/macro';
 import { useElements, useStripe } from '@stripe/react-stripe-js';
 import { useState } from 'react';
 import { AppPath } from 'twenty-shared/types';
@@ -13,6 +12,7 @@ import {
   CreateSubscriptionPaymentIntentDocument,
 } from '~/generated-metadata/graphql';
 import { buildAbsoluteAppUrl } from '~/utils/buildAbsoluteAppUrl';
+import { useLingui } from '@lingui/react/macro';
 
 type UseSubmitSubscriptionPaymentParams = {
   plan: BillingPlanKey;
@@ -23,6 +23,7 @@ export const useSubmitSubscriptionPayment = ({
   plan,
   recurringInterval,
 }: UseSubmitSubscriptionPaymentParams) => {
+  const { t } = useLingui();
   const stripe = useStripe();
   const elements = useElements();
   const { enqueueToast } = useToast();

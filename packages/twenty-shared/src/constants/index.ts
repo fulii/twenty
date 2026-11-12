@@ -72,6 +72,8 @@ export { MUTATION_MAX_MERGE_RECORDS } from './MutationMaxMergeRecords';
 export { OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS } from './ObjectsWithChannelVisibilityConstraints';
 export { PARTNER_PATTERN } from './PartnerPattern';
 export { PermissionFlagType } from './PermissionFlagType';
+export { PERMISSION_FLAG_TYPE_BY_UNIVERSAL_IDENTIFIER } from './PermissionFlagTypeByUniversalIdentifier';
+export { PERMISSION_FLAG_UNIVERSAL_IDENTIFIER_BY_TYPE } from './PermissionFlagUniversalIdentifierByType';
 export { PermissionsOnAllObjectRecords } from './PermissionsOnAllObjectRecords';
 export { POLLED_MESSAGE_CHANNEL_TYPES } from './PolledMessageChannelTypes';
 export { QUERY_DEFAULT_LIMIT_RECORDS } from './QueryDefaultLimitRecords';
@@ -96,6 +98,7 @@ export { VALIDATION_RULE_EXPRESSION_MAX_LENGTH } from './ValidationRuleExpressio
 export { VALIDATION_RULE_EXPRESSION_SYNTAX_DESCRIPTION } from './ValidationRuleExpressionSyntaxDescription';
 export { VALIDATION_RULE_FUNCTIONS } from './ValidationRuleFunctions';
 export { VALIDATION_RULE_NOW_VARIABLE_NAME } from './ValidationRuleNowVariableName';
+export { VALIDATION_RULE_PREVIOUS_VARIABLE_NAME } from './ValidationRulePreviousVariableName';
 export { VIEW_GROUP_LOAD_LIMIT_OPTIONS } from './ViewGroupLoadLimitOptions';
 export { VIEW_GROUP_VISIBLE_OPTIONS_MAX } from './ViewGroupVisibleOptionsMax';
 export { VIEW_TYPE_DEFAULT_ICONS } from './ViewTypeDefaultIcons';

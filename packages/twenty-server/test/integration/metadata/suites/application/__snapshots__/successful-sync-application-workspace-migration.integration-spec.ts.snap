@@ -89,7 +89,9 @@ exports[`syncApplication should create a TEXT field on the standard Company obje
           "canAccessAllTools": false,
           "canBeAssignedToAgents": true,
           "canBeAssignedToApiKeys": true,
+          "canBeAssignedToApplications": false,
           "canBeAssignedToUsers": true,
+          "canCreateAllObjectRecords": false,
           "canDestroyAllObjectRecords": false,
           "canReadAllObjectRecords": false,
           "canSoftDeleteAllObjectRecords": false,
@@ -994,6 +996,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
           "objectMetadataUniversalIdentifier": Any<String>,
           "openRecordIn": "SIDE_PANEL",
           "position": 0,
+          "shouldDisplayGroupsAsTabs": false,
           "shouldHideEmptyGroups": false,
           "type": "TABLE",
           "universalIdentifier": Any<String>,
@@ -1030,6 +1033,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
           "objectMetadataUniversalIdentifier": Any<String>,
           "openRecordIn": "SIDE_PANEL",
           "position": 0,
+          "shouldDisplayGroupsAsTabs": false,
           "shouldHideEmptyGroups": false,
           "type": "FIELDS_WIDGET",
           "universalIdentifier": Any<String>,
@@ -1290,7 +1294,9 @@ exports[`syncApplication should delete old field and create equivalent one when 
           "canAccessAllTools": false,
           "canBeAssignedToAgents": true,
           "canBeAssignedToApiKeys": true,
+          "canBeAssignedToApplications": false,
           "canBeAssignedToUsers": true,
+          "canCreateAllObjectRecords": false,
           "canDestroyAllObjectRecords": false,
           "canReadAllObjectRecords": false,
           "canSoftDeleteAllObjectRecords": false,
@@ -1496,6 +1502,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -1525,6 +1532,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -1552,6 +1560,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -1579,6 +1588,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -1606,6 +1616,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -1649,6 +1660,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
           "defaultValue": null,
           "description": "Ticket description",
           "disabledFieldPermissionActions": null,
+          "fieldMetadataOptionUniversalIdentifiers": [],
           "fieldPermissionUniversalIdentifiers": [],
           "icon": "IconFileDescription",
           "isActive": true,
@@ -1668,8 +1680,10 @@ exports[`syncApplication should delete old field and create equivalent one when 
           "objectMetadataUniversalIdentifier": Any<String>,
           "options": null,
           "overrides": null,
+          "relationRowLevelPermissionPredicateUniversalIdentifiers": [],
           "relationTargetFieldMetadataUniversalIdentifier": null,
           "relationTargetObjectMetadataUniversalIdentifier": null,
+          "rowLevelPermissionPredicateUniversalIdentifiers": [],
           "searchFieldMetadataUniversalIdentifiers": [],
           "type": "TEXT",
           "universalIdentifier": Any<String>,
@@ -1681,6 +1695,7 @@ exports[`syncApplication should delete old field and create equivalent one when 
           ],
           "viewFilterUniversalIdentifiers": [],
           "viewSortUniversalIdentifiers": [],
+          "workspaceMemberRowLevelPermissionPredicateUniversalIdentifiers": [],
         },
         "metadataName": "fieldMetadata",
         "type": "delete",
@@ -2730,6 +2745,7 @@ exports[`syncApplication should return workspace migration actions on initial sy
           "objectMetadataUniversalIdentifier": Any<String>,
           "openRecordIn": "SIDE_PANEL",
           "position": 0,
+          "shouldDisplayGroupsAsTabs": false,
           "shouldHideEmptyGroups": false,
           "type": "TABLE",
           "universalIdentifier": Any<String>,
@@ -2766,6 +2782,7 @@ exports[`syncApplication should return workspace migration actions on initial sy
           "objectMetadataUniversalIdentifier": Any<String>,
           "openRecordIn": "SIDE_PANEL",
           "position": 0,
+          "shouldDisplayGroupsAsTabs": false,
           "shouldHideEmptyGroups": false,
           "type": "FIELDS_WIDGET",
           "universalIdentifier": Any<String>,
@@ -3026,7 +3043,9 @@ exports[`syncApplication should return workspace migration actions on initial sy
           "canAccessAllTools": false,
           "canBeAssignedToAgents": true,
           "canBeAssignedToApiKeys": true,
+          "canBeAssignedToApplications": false,
           "canBeAssignedToUsers": true,
+          "canCreateAllObjectRecords": false,
           "canDestroyAllObjectRecords": false,
           "canReadAllObjectRecords": false,
           "canSoftDeleteAllObjectRecords": false,
@@ -3253,6 +3272,7 @@ This is a test skill.",
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -3282,6 +3302,7 @@ This is a test skill.",
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -3309,6 +3330,7 @@ This is a test skill.",
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -3336,6 +3358,7 @@ This is a test skill.",
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,
@@ -3363,6 +3386,7 @@ This is a test skill.",
       {
         "flatEntity": {
           "applicationUniversalIdentifier": Any<String>,
+          "conditionalAvailabilityExpression": null,
           "conditionalDisplay": null,
           "createdAt": Any<String>,
           "deletedAt": null,

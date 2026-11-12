@@ -23,6 +23,7 @@ export const fromNavigationMenuItemManifestToUniversalFlatNavigationMenuItem =
       viewUniversalIdentifier:
         navigationMenuItemManifest.viewUniversalIdentifier ?? null,
       link: navigationMenuItemManifest.link ?? null,
+      nativePageKey: navigationMenuItemManifest.nativePageKey ?? null,
       folderUniversalIdentifier:
         navigationMenuItemManifest.folderUniversalIdentifier ?? null,
       targetObjectMetadataUniversalIdentifier:
@@ -30,6 +31,8 @@ export const fromNavigationMenuItemManifestToUniversalFlatNavigationMenuItem =
       pageLayoutUniversalIdentifier:
         navigationMenuItemManifest.pageLayoutUniversalIdentifier ?? null,
       agentChatChannelUniversalIdentifier: null,
+      workflowUniversalIdentifier: null,
+      agentUniversalIdentifier: null,
       targetRecordId: null,
       userWorkspaceId: null,
       createdAt: now,

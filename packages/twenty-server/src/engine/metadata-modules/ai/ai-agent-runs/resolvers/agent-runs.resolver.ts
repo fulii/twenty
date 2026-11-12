@@ -10,27 +10,29 @@ import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filt
 import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { ApplicationTargetArg } from 'src/engine/decorators/auth/application-target-arg.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { ApplicationTargetGuard } from 'src/engine/guards/application-target.guard';
-import { AuthPrincipalGuard } from 'src/engine/guards/auth-principal.guard';
-import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
 import { AgentService } from 'src/engine/metadata-modules/ai/ai-agent/agent.service';
 import { AgentRunDTO } from 'src/engine/metadata-modules/ai/ai-agent-runs/dtos/agent-run.dto';
 import { AgentRunsService } from 'src/engine/metadata-modules/ai/ai-agent-runs/services/agent-runs.service';
 import { AiGraphqlApiExceptionInterceptor } from 'src/engine/metadata-modules/ai/interceptors/ai-graphql-api-exception.interceptor';
+import { AccessPolicyGuard } from 'src/engine/guards/access-policy.guard';
 
 @UseGuards(
-  AuthPrincipalGuard({
-    userSession: {
-      standard: true,
-      impersonated: true,
-      playground: true,
-      workspaceAgnostic: false,
+  AccessPolicyGuard({
+    authPrincipals: {
+      userSession: {
+        standard: true,
+        impersonated: true,
+        playground: true,
+        workspaceAgnostic: false,
+      },
+      apiKey: true,
+      oauthClient: true,
+      application: true,
     },
-    apiKey: true,
-    oauthClient: true,
-    application: true,
+    requiredPermissionFlags: [PermissionFlagType.AI_SETTINGS],
   }),
-  SettingsPermissionGuard(PermissionFlagType.AI_SETTINGS),
 )
 @UseInterceptors(AiGraphqlApiExceptionInterceptor)
 @MetadataResolver(() => AgentRunDTO)
@@ -56,11 +58,17 @@ export class AgentRunsResolver {
     agentId: string,
     @Args('limit', { type: () => Int, defaultValue: 100 }) limit: number,
     @AuthWorkspace() { id: workspaceId }: WorkspaceEntity,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
   ): Promise<AgentRunDTO[]> {
     // The application target guard lets unknown ids through, and turns outlive
     // their agent, so a deleted agent's runs would otherwise reach any app
     await this.agentService.findOneAgentById({ id: agentId, workspaceId });
 
-    return this.agentRunsService.findAgentRuns({ workspaceId, agentId, limit });
+    return this.agentRunsService.findAgentRuns({
+      workspaceId,
+      workspaceMemberId,
+      agentId,
+      limit,
+    });
   }
 }

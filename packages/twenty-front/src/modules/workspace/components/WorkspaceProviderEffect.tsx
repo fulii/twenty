@@ -8,7 +8,9 @@ import { useEffect, useCallback } from 'react';
 import { useInitializeQueryParamState } from '@/app/hooks/useInitializeQueryParamState';
 import { isChooseWorkspaceActionRequested } from '@/auth/utils/isChooseWorkspaceActionRequested';
 import { useGetPublicWorkspaceDataByDomain } from '@/domain-manager/hooks/useGetPublicWorkspaceDataByDomain';
+import { useIsCurrentLocationOnBareFrontDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnBareFrontDomain';
 import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
+import { useRedirectToDefaultDomain } from '@/domain-manager/hooks/useRedirectToDefaultDomain';
 import { isDefined } from 'twenty-shared/utils';
 import { type WorkspaceUrls } from '~/generated-metadata/graphql';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
@@ -26,6 +28,9 @@ export const WorkspaceProviderEffect = () => {
 
   const { redirectToWorkspaceDomain } = useRedirectToWorkspaceDomain();
   const { isDefaultDomain } = useIsCurrentLocationOnDefaultDomain();
+  const { isBareFrontDomain } = useIsCurrentLocationOnBareFrontDomain();
+  const { redirectCurrentLocationToDefaultDomain } =
+    useRedirectToDefaultDomain();
 
   const { currentLocationHostname } = useReadWorkspaceUrlFromCurrentLocation();
 
@@ -44,6 +49,12 @@ export const WorkspaceProviderEffect = () => {
   );
 
   useEffect(() => {
+    if (isBareFrontDomain) {
+      redirectCurrentLocationToDefaultDomain();
+    }
+  }, [isBareFrontDomain, redirectCurrentLocationToDefaultDomain]);
+
+  useEffect(() => {
     if (
       isMultiWorkspaceEnabled &&
       isDefined(getPublicWorkspaceData) &&
@@ -51,11 +62,11 @@ export const WorkspaceProviderEffect = () => {
         getPublicWorkspaceData.workspaceUrls,
       )
     ) {
-      redirectToWorkspaceDomain(
-        getWorkspaceUrl(getPublicWorkspaceData.workspaceUrls),
-        getAppPathname(),
-        getCurrentSearchParams(),
-      );
+      redirectToWorkspaceDomain({
+        baseUrl: getWorkspaceUrl(getPublicWorkspaceData.workspaceUrls),
+        pathname: getAppPathname(),
+        searchParams: getCurrentSearchParams(),
+      });
     }
   }, [
     isMultiWorkspaceEnabled,
@@ -75,11 +86,11 @@ export const WorkspaceProviderEffect = () => {
       isDefined(lastAuthenticatedWorkspaceDomain?.workspaceUrl)
     ) {
       initializeQueryParamState();
-      redirectToWorkspaceDomain(
-        lastAuthenticatedWorkspaceDomain.workspaceUrl,
-        getAppPathname(),
-        getCurrentSearchParams(),
-      );
+      redirectToWorkspaceDomain({
+        baseUrl: lastAuthenticatedWorkspaceDomain.workspaceUrl,
+        pathname: getAppPathname(),
+        searchParams: getCurrentSearchParams(),
+      });
     }
   }, [
     isMultiWorkspaceEnabled,

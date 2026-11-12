@@ -232,6 +232,7 @@ const NAVIGATION_MENU_ITEM_MANIFEST: Required<NavigationMenuItemManifest> = {
   color: 'green',
   position: 12,
   link: 'https://example.com/pets',
+  nativePageKey: 'workflows',
   folderUniversalIdentifier: '88888888-8888-4888-8888-888888888888',
   viewUniversalIdentifier: VIEW_UID,
   targetObjectUniversalIdentifier: OBJECT_UID,
@@ -342,6 +343,14 @@ const ROW_LEVEL_PERMISSION_PREDICATE_MANIFEST: RowLevelPermissionPredicateManife
     position: 0,
   };
 
+const CREATE_PERMISSION_DERIVED_ON_IMPORT =
+  'Not in the manifest yet: importing derives it from the update permission';
+
+const RULE_DERIVED_ON_IMPORT =
+  'rules are derived on import from the predicate groups and predicates';
+const PREDICATE_GROUP_OPERATIONS_GAP =
+  'not in app manifests until the engine reads predicate group operations';
+
 const ROW_LEVEL_PERMISSION_KIND_GAPS = {
   deletedAt:
     'soft-deleted row-level permission predicates and groups are reported as excluded instead of exported',
@@ -386,6 +395,7 @@ const exportWorkflowManifestOrThrow = (manifest: WorkflowManifest) => {
       ...universalFlatWorkflow,
       workspaceId: 'workspace-id',
       applicationId: 'application-id',
+      navigationMenuItemIds: [],
     },
     flatWorkflowVersion: {
       ...flatUniversalWorkflowVersion,
@@ -407,6 +417,8 @@ const AGENT_MANIFEST: AgentManifest = {
   name: 'lead-scorer',
   label: 'Lead Scorer',
   icon: 'IconRobot',
+  avatarColor: 'pink',
+  avatarShape: 'pill',
   description: 'Scores new leads',
   prompt: 'Score the lead.',
   modelId: 'gpt-4o',
@@ -730,7 +742,9 @@ const EXPORTED_KINDS: ExportedKind[] = [
     ),
     renamedProperties: {},
     workspaceLocalProperties: [],
-    knownGaps: {},
+    knownGaps: {
+      canCreateAllObjectRecords: CREATE_PERMISSION_DERIVED_ON_IMPORT,
+    },
   },
   {
     metadataName: 'objectPermission',
@@ -747,7 +761,10 @@ const EXPORTED_KINDS: ExportedKind[] = [
       objectMetadataUniversalIdentifier: 'objectUniversalIdentifier',
     },
     workspaceLocalProperties: [],
-    knownGaps: NESTED_ROLE_CHILD_GAPS,
+    knownGaps: {
+      ...NESTED_ROLE_CHILD_GAPS,
+      canCreateObjectRecords: CREATE_PERMISSION_DERIVED_ON_IMPORT,
+    },
   },
   {
     metadataName: 'fieldPermission',
@@ -765,7 +782,12 @@ const EXPORTED_KINDS: ExportedKind[] = [
       fieldMetadataUniversalIdentifier: 'fieldUniversalIdentifier',
     },
     workspaceLocalProperties: [],
-    knownGaps: NESTED_ROLE_CHILD_GAPS,
+    knownGaps: {
+      ...NESTED_ROLE_CHILD_GAPS,
+      rowLevelPermissionPredicateGroupUniversalIdentifier:
+        'manifests do not declare field permissions on a row level permission rule yet',
+      rowLevelPermissionRuleUniversalIdentifier: RULE_DERIVED_ON_IMPORT,
+    },
   },
   {
     metadataName: 'rolePermissionFlag',
@@ -809,7 +831,15 @@ const EXPORTED_KINDS: ExportedKind[] = [
       positionInRowLevelPermissionPredicateGroup: 'position',
     },
     workspaceLocalProperties: [],
-    knownGaps: ROW_LEVEL_PERMISSION_KIND_GAPS,
+    knownGaps: {
+      ...ROW_LEVEL_PERMISSION_KIND_GAPS,
+      canReadRecords: PREDICATE_GROUP_OPERATIONS_GAP,
+      canCreateRecords: PREDICATE_GROUP_OPERATIONS_GAP,
+      canUpdateRecords: PREDICATE_GROUP_OPERATIONS_GAP,
+      canSoftDeleteRecords: PREDICATE_GROUP_OPERATIONS_GAP,
+      canDestroyRecords: PREDICATE_GROUP_OPERATIONS_GAP,
+      rowLevelPermissionRuleUniversalIdentifier: RULE_DERIVED_ON_IMPORT,
+    },
   },
   {
     metadataName: 'rowLevelPermissionPredicate',
@@ -838,6 +868,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
       ...ROW_LEVEL_PERMISSION_KIND_GAPS,
       relationFieldMetadataUniversalIdentifier:
         'no manifest slot yet for a predicate reached through a relation',
+      rowLevelPermissionRuleUniversalIdentifier: RULE_DERIVED_ON_IMPORT,
     },
   },
   {
@@ -865,6 +896,8 @@ const EXPORTED_KINDS: ExportedKind[] = [
     workspaceLocalProperties: ['visibility'],
     knownGaps: {
       isSystem: 'system workflows are reported as excluded',
+      jobConfig:
+        'no manifest slot yet, every application workflow gets the default',
       lastPublishedVersionId:
         'legacy workspace version pointer, kept while the active version matches the definition',
       lastPublishedCoreWorkflowVersionId:
