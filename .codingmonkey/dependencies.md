@@ -57,7 +57,9 @@ The only pins of ours are the images in `infra/prod/k8s/`.
   which must satisfy `engines.node`.
 - Validated by: the checks (`.codingmonkey/check.sh`: typecheck of every
   affected package, one at a time and with `--noEmit` to stay in the shared
-  host's memory; lint, format and related tests of the changed files; not
+  host's memory; lint, format and related tests of the changed files, a Jest
+  suite that fails rerun once on its own (upstream's wall-time-bound suites
+  time out when the shared host is loaded); not
   `twenty-zapier`'s tests, which need a running server, nor the format of
   packages whose own `fmt` is Prettier, which upstream's CI never runs), then
   ship's build of the image and `infra/prod/validate.sh`. The server runs

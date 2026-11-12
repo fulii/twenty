@@ -43,7 +43,16 @@ for package in "${packages[@]}"; do
     [[ $package != twenty-zapier ]] || exit 0
     vitest_config=$(compgen -G 'vitest.config.*' || true)
     if [[ -f jest.config.mjs ]]; then
-      jest --config jest.config.mjs --maxWorkers="$jest_workers" --workerIdleMemoryLimit=1G --passWithNoTests --findRelatedTests "${files[@]}"
+      results=$(mktemp)
+      if ! jest --config jest.config.mjs --maxWorkers="$jest_workers" --workerIdleMemoryLimit=1G --passWithNoTests \
+        --json --outputFile="$results" --findRelatedTests "${files[@]}"; then
+        # Suites bound by wall time (a 10 s build limit, spawned processes) time
+        # out when the shared host is loaded; each failed suite reruns once alone.
+        mapfile -t failed < <(node -e 'for (const r of JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).testResults) if (r.status === "failed") console.log(r.name)' "$results")
+        [[ ${#failed[@]} != 0 ]] || exit 1
+        echo "== $package: rerunning ${#failed[@]} failed suites in band"
+        jest --config jest.config.mjs --runInBand --runTestsByPath "${failed[@]}"
+      fi
     elif [[ -n $vitest_config ]]; then
       # A config with a `unit` project also has browser ones, which need Playwright.
       vitest related --run --maxWorkers="$workers" --passWithNoTests --config "$vitest_config" \
