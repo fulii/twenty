@@ -92,8 +92,9 @@ spec:
       containers:
         - name: redis
           image: docker.io/library/redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
-          # Twenty's compose file: queued jobs must never be evicted.
-          args: [--maxmemory-policy, noeviction]
+          # Twenty's compose file: queued jobs must never be evicted. Capped below the
+          # memory limit so a full Redis refuses writes instead of being OOM-killed.
+          args: [--maxmemory, 200mb, --maxmemory-policy, noeviction]
           ports:
             - name: redis
               containerPort: 6379
