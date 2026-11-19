@@ -144,3 +144,68 @@ prune_images() {
     echo "ok    removed the image of $tag"
   done
 }
+
+# ---- the rollout ------------------------------------------------------------
+
+# Waits for each deployment's rollout for at most $1 seconds each, and stops as
+# soon as a pod of its new release cannot start. When one does not become
+# ready: says why, prints its pods' logs, undoes them all and returns 1.
+roll() {
+  local timeout=$1 deployment watcher stuck pod reason message
+  shift
+  for deployment in "$@"; do
+    # kubectl itself, not `k`: killing a subshell would leave kubectl running.
+    kubectl --namespace "$CM_CLUSTER_NAMESPACE" rollout status "deployment/$deployment" --timeout="${timeout}s" &
+    watcher=$!
+    stuck=
+    while kill -0 "$watcher" 2>/dev/null; do
+      stuck=$(stuck_pod "$deployment") || stuck=
+      [[ -z $stuck ]] || break
+      sleep 5
+    done
+    if [[ -n $stuck ]]; then
+      kill "$watcher" 2>/dev/null || true
+      wait "$watcher" 2>/dev/null || true
+      IFS=$'\t' read -r pod reason message <<<"$stuck"
+      echo "$deployment did not become ready: its new pod $pod is in $reason${message:+ ($message)}. Its last logs:" >&2
+      k logs "pod/$pod" --all-containers --prefix --tail=40 --previous >&2 2>/dev/null ||
+        k logs "pod/$pod" --all-containers --prefix --tail=40 >&2 || true
+    elif wait "$watcher"; then
+      continue
+    else
+      echo "$deployment did not become ready. What its pods said:" >&2
+      k logs --selector "app.kubernetes.io/name=$deployment" --all-containers --tail=40 --prefix >&2 || true
+    fi
+    echo "Undoing $*." >&2
+    k rollout undo "${@/#/deployment/}" >&2 || true
+    return 1
+  done
+}
+
+# The first pod of the deployment's newest ReplicaSet that cannot start, as
+# "pod<TAB>reason<TAB>message"; nothing until the controller has seen the newest
+# spec, so that pods of the previous release never count.
+stuck_pod() {
+  {
+    k get deployment "$1" -o json
+    k get replicasets,pods --selector "app.kubernetes.io/name=$1" -o json
+  } | jq -rs '
+    .[0] as $deployment
+    | select($deployment.status.observedGeneration == $deployment.metadata.generation)
+    | $deployment.metadata.annotations["deployment.kubernetes.io/revision"] as $revision
+    | [.[1].items[]
+        | select(.kind == "ReplicaSet"
+            and .metadata.annotations["deployment.kubernetes.io/revision"] == $revision
+            and any(.metadata.ownerReferences[]?; .kind == "Deployment" and .name == $deployment.metadata.name))
+        | .metadata.labels["pod-template-hash"]] as $hashes
+    | [.[1].items[]
+        | select(.kind == "Pod" and (.metadata.labels["pod-template-hash"] | IN($hashes[])))
+        | .metadata.name as $pod
+        | (.status.initContainerStatuses // []) + (.status.containerStatuses // []) | .[]
+        | .state.waiting as $waiting
+        | select($waiting != null)
+        | select(($waiting.reason == "CrashLoopBackOff" and .restartCount >= 2)
+            or ($waiting.reason | IN("ImagePullBackOff", "ErrImagePull", "CreateContainerConfigError", "CreateContainerError")))
+        | [$pod, $waiting.reason, ($waiting.message // "" | gsub("[\t\n]"; " "))] | join("\t")]
+    | .[0] // empty'
+}

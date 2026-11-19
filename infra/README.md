@@ -9,9 +9,10 @@ on its own: no tunnel, no ingress.
 
 | File | What |
 | --- | --- |
-| `prod/deploy.sh` | Builds the commit's image in the namespace (`k8s/builder.yaml`), writes the Secret `twenty`, dumps the database before a new image starts, rolls server and worker (`k8s/twenty.yaml`) |
+| `prod/deploy.sh` | Builds the commit's image in the namespace (`k8s/builder.yaml`), writes the Secret `twenty`, dumps the database before a new image starts, rolls server and worker (`k8s/twenty.yaml`), stopping early and undoing the roll when a new pod crash-loops or cannot pull or create its container |
 | `prod/validate.sh` | The commit's image runs; `/twenty/healthz`, the web app and the GraphQL API answer at the Service |
 | `prod/render.sh` | Prints what a deploy applies, without a cluster |
+| `test.sh` | Tests `lib.sh`'s rollout wait against a fake kubectl; the `infra` check runs it |
 
 ## What a step is handed
 
