@@ -6,14 +6,14 @@ import { type ObjectRecordsOperationType } from 'twenty-shared/types';
 import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
 import { type AccessGroupWithoutCompactId } from 'src/engine/permissions/internal/access-group/types/access-group.type';
-import { buildCallerRelatedRecordPathAccessGroupsOrThrow } from 'src/engine/permissions/internal/access-group/utils/build-caller-related-record-path-access-groups-or-throw.util';
+import { buildPrincipalsRelatedRecordPathAccessGroupsOrThrow } from 'src/engine/permissions/internal/access-group/utils/build-principals-related-record-path-access-groups-or-throw.util';
 import { buildRoleAccessGroupsOrThrow } from 'src/engine/permissions/internal/access-group/utils/build-role-access-groups-or-throw.util';
-import { type PermissionsObjectAccessRequest } from 'src/engine/permissions/internal/combine/types/row-access-policy.type';
-import { canRelatedRecordPathGrantOperation } from 'src/engine/permissions/internal/related-record-path/utils/can-related-record-path-grant-operation.util';
-import { type RowLevelPermissionWorkspaceMember } from 'src/engine/permissions/internal/rls/types/row-level-permission-workspace-member.type';
+import { type PermissionsObjectAccessRequest } from 'src/engine/permissions/internal/combine/types/permissions-access-request.type';
+import { canRelatedRecordPathExtendAccess } from 'src/engine/permissions/internal/related-record-path/utils/can-related-record-path-extend-access.util';
+import { type RlsWorkspaceMember } from 'src/engine/permissions/internal/rls/types/rls-workspace-member.type';
 import { isPermissionMainPrincipalWorkspaceMember } from 'src/engine/permissions/internal/principal/utils/is-permission-main-principal-workspace-member.util';
 import { AccessGroupReadRepository } from 'src/engine/permissions/internal/record-permission-repository/repositories/access-group-read.repository';
-import { isRowLevelPermissionRelationHopEnabled } from 'src/engine/permissions/internal/rls/utils/is-row-level-permission-relation-hop-enabled.util';
+import { isRlsRelationHopEnabled } from 'src/engine/permissions/internal/rls/utils/is-rls-relation-hop-enabled.util';
 import { type PermissionsPrincipalsWithRolesContext } from 'src/engine/permissions/principal/types/permissions-principals-with-roles-context.type';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
@@ -24,7 +24,7 @@ export class AccessGroupReadService {
     private readonly accessGroupReadRepository: AccessGroupReadRepository,
   ) {}
 
-  async findCallerCompactIds({
+  async findPrincipalsCompactIds({
     principals,
     objectMetadataId,
     operationType,
@@ -36,7 +36,7 @@ export class AccessGroupReadService {
     objectMetadataId: string;
     operationType: ObjectRecordsOperationType;
   }): Promise<number[]> {
-    const { workspaceId, mainPrincipal } = principals;
+    const { workspaceId } = principals;
     const { featureFlagsMap, rolesPermissions, flatFieldMetadataMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'featureFlagsMap',
@@ -44,26 +44,30 @@ export class AccessGroupReadService {
         'flatFieldMetadataMaps',
       ]);
 
+    const workspaceMember = await this.findPrincipalWorkspaceMember(principals);
+    const workspaceMembers = [workspaceMember].filter(isDefined);
+
     return this.findCompactIds({
       workspaceId,
-      accessGroups: buildRoleAccessGroupsOrThrow({
-        roleId: mainPrincipal.roleId,
-        objectMetadataId,
-        objectRecordsPermissions:
-          rolesPermissions[mainPrincipal.roleId]?.objects[objectMetadataId],
-        operationTypes: [operationType],
-        workspaceMembers: await this.findCallerWorkspaceMembers(principals),
-        flatFieldMetadataMaps,
-        isRelationHopEnabled:
-          isRowLevelPermissionRelationHopEnabled(featureFlagsMap),
-      }),
+      accessGroups: principals.mainPrincipal.roleIds.flatMap((roleId) =>
+        buildRoleAccessGroupsOrThrow({
+          roleId,
+          objectMetadataId,
+          objectRecordsPermissions:
+            rolesPermissions[roleId]?.objects[objectMetadataId],
+          operationTypes: [operationType],
+          workspaceMembers,
+          flatFieldMetadataMaps,
+          isRelationHopEnabled: isRlsRelationHopEnabled(featureFlagsMap),
+        }),
+      ),
     });
   }
 
-  async findCallerRelatedRecordPathCompactIds(
+  async findPrincipalsRelatedRecordPathCompactIds(
     request: PermissionsObjectAccessRequest,
   ): Promise<number[]> {
-    if (!canRelatedRecordPathGrantOperation(request)) {
+    if (!canRelatedRecordPathExtendAccess(request)) {
       return [];
     }
 
@@ -75,35 +79,32 @@ export class AccessGroupReadService {
 
     return this.findCompactIds({
       workspaceId,
-      accessGroups: buildCallerRelatedRecordPathAccessGroupsOrThrow({
+      accessGroups: buildPrincipalsRelatedRecordPathAccessGroupsOrThrow({
         request,
-        workspaceMembers: await this.findCallerWorkspaceMembers(
-          request.principals,
-        ),
+        workspaceMembers: [
+          await this.findPrincipalWorkspaceMember(request.principals),
+        ].filter(isDefined),
         flatFieldMetadataMaps,
       }),
     });
   }
 
-  private async findCallerWorkspaceMembers({
+  private async findPrincipalWorkspaceMember({
     workspaceId,
     mainPrincipal,
   }: Pick<
     PermissionsPrincipalsWithRolesContext,
     'workspaceId' | 'mainPrincipal'
-  >): Promise<RowLevelPermissionWorkspaceMember[]> {
+  >): Promise<RlsWorkspaceMember | undefined> {
     if (!isPermissionMainPrincipalWorkspaceMember(mainPrincipal)) {
-      return [];
+      return undefined;
     }
 
     const { flatWorkspaceMemberMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'flatWorkspaceMemberMaps',
       ]);
-    const workspaceMember =
-      flatWorkspaceMemberMaps.byId[mainPrincipal.workspaceMemberId];
-
-    return isDefined(workspaceMember) ? [workspaceMember] : [];
+    return flatWorkspaceMemberMaps.byId[mainPrincipal.workspaceMemberId];
   }
 
   private async findCompactIds({

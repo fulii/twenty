@@ -260,12 +260,12 @@ export const PageChangeEffect = () => {
         break;
       }
       case isMatchingLocation(location, AppPath.AiChatInbox): {
-        const isEnteringAiChatInbox = !matchPath(
+        const isEnteringInbox = !matchPath(
           AppPath.AiChatInbox,
           previousLocation,
         );
 
-        if (!isEnteringAiChatInbox) {
+        if (!isEnteringInbox) {
           break;
         }
 

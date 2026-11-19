@@ -1,13 +1,14 @@
 import { useLingui } from '@lingui/react/macro';
 
 import { InformationBanner } from '@/information-banner/components/InformationBanner';
-import { useTriggerAppOAuth } from '@/settings/applications/hooks/useTriggerAppOAuth';
+import { useStartAppConnection } from '@/settings/applications/hooks/useStartAppConnection';
 import { IconRefresh } from 'twenty-ui/icon';
 import { getAppPathname } from '~/utils/getAppPathname';
 
 type ChatThreadDisconnectedBannerProps = {
   applicationId: string;
   connectionProviderName: string;
+  connectionProviderType: string;
   channelName: string;
   connectedAccountId: string;
   canReconnect: boolean;
@@ -16,17 +17,19 @@ type ChatThreadDisconnectedBannerProps = {
 export const ChatThreadDisconnectedBanner = ({
   applicationId,
   connectionProviderName,
+  connectionProviderType,
   channelName,
   connectedAccountId,
   canReconnect,
 }: ChatThreadDisconnectedBannerProps) => {
   const { t } = useLingui();
-  const { triggerAppOAuth } = useTriggerAppOAuth();
+  const { startAppConnection } = useStartAppConnection();
 
   const handleReconnect = () =>
-    triggerAppOAuth({
+    startAppConnection({
       applicationId,
-      providerName: connectionProviderName,
+      connectionProviderName,
+      connectionProviderType,
       reconnectingConnectedAccountId: connectedAccountId,
       redirectLocation: `${getAppPathname()}${window.location.search}${window.location.hash}`,
     });

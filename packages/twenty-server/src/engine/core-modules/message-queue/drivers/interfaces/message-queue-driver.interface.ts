@@ -4,7 +4,6 @@ import {
   type QueueCronJobOptions,
   type QueueJobOptions,
   type QueueJobRecipient,
-  type QueueJobLimiter,
   type QueueJobScope,
   type QueueJobSettings,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
@@ -64,6 +63,7 @@ export interface MessageQueueDriver {
     queueName: MessageQueue,
   ): Promise<InFlightQueueJob<T>[]>;
   reconcileJobMemory?(): Promise<JobMemoryReconciliation>;
+  removeJob?(queueName: MessageQueue, jobId: string): Promise<boolean>;
   getJobs?<T extends MessageQueueJobData>(
     queueName: MessageQueue,
     jobIds: string[],
@@ -73,7 +73,7 @@ export interface MessageQueueDriver {
 export type QueueJobToAdd<T extends MessageQueueJobData> = {
   data: T;
   jobId?: string;
-  limiter?: QueueJobLimiter;
+  groupKey?: string;
 } & QueueJobScope;
 
 export type BulkAddResult = {

@@ -1,3 +1,4 @@
+import { useAiChatInstanceOrThrow } from '@/ai/hooks/useAiChatInstanceOrThrow';
 import { useCurrentAiChatThreadAccess } from '@/ai/hooks/useCurrentAiChatThreadAccess';
 import { StyledAiChatContentContainer } from '@/ai/components/StyledAiChatContentContainer';
 import { useState } from 'react';
@@ -7,6 +8,7 @@ import { EditorContent } from '@tiptap/react';
 import { useLingui } from '@lingui/react/macro';
 import { themeCssVariables } from 'twenty-ui/theme';
 
+import { AiChatComposerQuote } from '@/ai/components/AiChatComposerQuote';
 import { StyledChatComposerBox } from '@/chat/components/StyledChatComposerBox';
 import { AiChatInlineBanner } from '@/ai/components/AiChatInlineBanner';
 import { AiChatEmptyState } from '@/ai/components/AiChatEmptyState';
@@ -16,7 +18,7 @@ import { AiChatNoMoreBillingCreditsBanner } from '@/ai/components/AiChatNoMoreBi
 import { AiChatUsageLimitReachedBanner } from '@/ai/components/AiChatUsageLimitReachedBanner';
 import { AiChatUserCreditsExhaustedBanner } from '@/ai/components/AiChatUserCreditsExhaustedBanner';
 import { AiChatStandaloneError } from '@/ai/components/AiChatStandaloneError';
-import { AgentChatContextPreview } from '@/ai/components/internal/AgentChatContextPreview';
+import { AiChatContextPreview } from '@/ai/components/internal/AiChatContextPreview';
 import { AiChatAddMenu } from '@/ai/components/AiChatAddMenu';
 import { AiChatDictationButton } from '@/ai/dictation/components/AiChatDictationButton';
 import { AiChatDictationEffect } from '@/ai/dictation/components/AiChatDictationEffect';
@@ -24,6 +26,7 @@ import { AiChatDictationHint } from '@/ai/dictation/components/AiChatDictationHi
 import { AiChatComposerActionsRow } from '@/ai/components/internal/AiChatComposerActionsRow';
 import { AiChatContextUsageButton } from '@/ai/components/internal/AiChatContextUsageButton';
 import { AiChatEditorFocusEffect } from '@/ai/components/internal/AiChatEditorFocusEffect';
+import { AiChatEditorDraftSyncEffect } from '@/ai/components/internal/AiChatEditorDraftSyncEffect';
 import { AiChatSentMessageHandOffEffect } from '@/ai/components/internal/AiChatSentMessageHandOffEffect';
 import { SendMessageButton } from '@/ai/components/internal/SendMessageButton';
 import { useAiChatEditor } from '@/ai/hooks/useAiChatEditor';
@@ -33,14 +36,13 @@ import { useHasAiChatPageContentInset } from '@/ai/hooks/useHasAiChatPageContent
 import { useIsAiChatComposerCentered } from '@/ai/hooks/useIsAiChatComposerCentered';
 import { useHasReachedAiChatCreditsCap } from '@/ai/hooks/useHasReachedAiChatCreditsCap';
 import { useHasReachedAiChatUsageLimit } from '@/ai/hooks/useHasReachedAiChatUsageLimit';
-import { agentChatHasMessageSelector } from '@/ai/states/selectors/agentChatHasMessageSelector';
+import { aiChatHasMessageFamilySelector } from '@/ai/states/selectors/aiChatHasMessageFamilySelector';
 import { aiModelsState } from '@/client-config/states/aiModelsState';
 import { useIsMobile } from 'twenty-ui/utilities';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useCanSendAgentChatMessage } from '@/ai/hooks/useCanSendAgentChatMessage';
-import { agentChatThreadIsDirectMessageFamilySelector } from '@/ai/states/selectors/agentChatThreadIsDirectMessageFamilySelector';
+import { useCanSendAiChatMessage } from '@/ai/hooks/useCanSendAiChatMessage';
+import { aiChatThreadIsDirectMessageFamilySelector } from '@/ai/states/selectors/aiChatThreadIsDirectMessageFamilySelector';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
-import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
 
 const StyledInputArea = styled(StyledAiChatContentContainer)<{
   isMobile: boolean;
@@ -150,11 +152,11 @@ const EditableAiChatEditorSection = () => {
     !hasReachedAiChatCreditsCap && hasReachedAiChatUsageLimit;
   const aiModels = useAtomStateValue(aiModelsState);
   const hasNoEnabledModels = aiModels.length === 0;
-  const canSendAgentChatMessage = useCanSendAgentChatMessage();
-  const currentAiChatThread = useAtomStateValue(currentAiChatThreadState);
+  const canSendAiChatMessage = useCanSendAiChatMessage();
+  const { threadId } = useAiChatInstanceOrThrow();
   const isDirectMessage = useAtomFamilySelectorValue(
-    agentChatThreadIsDirectMessageFamilySelector,
-    currentAiChatThread,
+    aiChatThreadIsDirectMessageFamilySelector,
+    threadId,
   );
 
   const { editor } = useAiChatEditor();
@@ -164,6 +166,7 @@ const EditableAiChatEditorSection = () => {
 
   const composer = (
     <StyledInputBox isMobile={isMobile}>
+      <AiChatComposerQuote />
       <StyledEditorWrapper isMobile={isMobile}>
         <EditorContent editor={editor} />
       </StyledEditorWrapper>
@@ -182,15 +185,19 @@ const EditableAiChatEditorSection = () => {
         }
         modelTierDropdownId="ai-chat-model-tier-dropdown"
         isModelPickerHidden={isDirectMessage}
-        sendButton={<SendMessageButton isDisabled={!canSendAgentChatMessage} />}
+        sendButton={<SendMessageButton isDisabled={!canSendAiChatMessage} />}
       />
     </StyledInputBox>
   );
-  const agentChatHasMessage = useAtomStateValue(agentChatHasMessageSelector);
+  const aiChatHasMessage = useAtomFamilySelectorValue(
+    aiChatHasMessageFamilySelector,
+    threadId,
+  );
 
   return (
     <>
       <AiChatEditorFocusEffect editor={editor} />
+      <AiChatEditorDraftSyncEffect editor={editor} />
       <AiChatSentMessageHandOffEffect
         editor={editor}
         isComposerCentered={isComposerCentered}
@@ -201,7 +208,7 @@ const EditableAiChatEditorSection = () => {
           onFinalText={insertDictatedText}
         />
       )}
-      {!agentChatHasMessage && (
+      {!aiChatHasMessage && (
         <StyledMessageListPlaceholder>
           {!isComposerCentered && !isDirectMessage && <AiChatEmptyState />}
           <AiChatStandaloneError />
@@ -216,7 +223,7 @@ const EditableAiChatEditorSection = () => {
         {isComposerCentered && !isDirectMessage && (
           <AiChatEmptyState isCentered />
         )}
-        {!isDirectMessage && <AgentChatContextPreview />}
+        {!isDirectMessage && <AiChatContextPreview />}
         {hasNoEnabledModels && !isDirectMessage && (
           <AiChatInlineBanner>{t`No AI provider is configured on this instance.`}</AiChatInlineBanner>
         )}
