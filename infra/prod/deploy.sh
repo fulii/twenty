@@ -53,14 +53,7 @@ manifest twenty | k apply -f - >/dev/null
   k rollout restart deployment/twenty-server deployment/twenty-worker >/dev/null
 
 # Migrations run before the server listens: its startup probe allows 10 minutes.
-for deployment in twenty-server twenty-worker; do
-  k rollout status "deployment/$deployment" --timeout=900s && continue
-  echo "$deployment did not become ready. What its pods said:" >&2
-  k logs --selector "app.kubernetes.io/name=$deployment" --all-containers --tail=40 --prefix >&2 || true
-  echo "Undoing both." >&2
-  k rollout undo deployment/twenty-server deployment/twenty-worker >&2 || true
-  exit 1
-done
+roll 900 twenty-server twenty-worker
 echo "ok    $(image) is live"
 
 prune_images "$CM_SHA" || echo "Not every image beyond the newest three was removed." >&2
