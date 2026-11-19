@@ -32,7 +32,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: postgres
-          image: docker.io/library/postgres:16.15-trixie@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
+          image: docker.io/library/postgres:16.16-trixie@sha256:3950ad7c3148ca2175ef1b6c36c9efbf78957ae8fbe8b3a5d7c35af50500382f
           env:
             - {name: POSTGRES_DB, value: twenty}
             - {name: POSTGRES_USER, value: twenty}
@@ -152,7 +152,7 @@ spec:
       # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
       initContainers:
         - name: wait-for-db
-          image: docker.io/library/postgres:16.15-trixie@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
+          image: docker.io/library/postgres:16.16-trixie@sha256:3950ad7c3148ca2175ef1b6c36c9efbf78957ae8fbe8b3a5d7c35af50500382f
           command: [sh, -c, 'until pg_isready -h twenty-db -U twenty -d twenty; do echo "waiting for twenty-db"; sleep 2; done']
           resources:
             requests: {cpu: 10m, memory: 16Mi}

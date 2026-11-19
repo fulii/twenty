@@ -4,7 +4,10 @@ import {
   type RowLevelPermissionPredicate,
   RowLevelPermissionPredicateOperand,
 } from 'twenty-shared/types';
-import { canReachSomeRecords, isDefined } from 'twenty-shared/utils';
+import {
+  canAccessThroughAllRecordsOrRlsPermission,
+  isDefined,
+} from 'twenty-shared/utils';
 
 import { ApplicationRegistrationSourceType } from 'src/engine/core-modules/application/application-registration/enums/application-registration-source-type.enum';
 import { createEmptyFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/constant/create-empty-flat-entity-maps.constant';
@@ -150,7 +153,19 @@ describe('computePrincipalsRecordsPermissions', () => {
   it('should resolve a single role unchanged', () => {
     expect(
       computeForPrincipals({
-        mainPrincipal: { type: 'role', roleId: 'agent-role-id' },
+        mainPrincipal: { type: 'role', roleIds: ['agent-role-id'] },
+        applicationPrincipal: { type: 'customApplication' },
+      }),
+    ).toEqual(agentRolePermissions);
+  });
+
+  it('should add up the grants of the main roles', () => {
+    expect(
+      computeForPrincipals({
+        mainPrincipal: {
+          type: 'role',
+          roleIds: ['default-role-id', 'agent-role-id'],
+        },
         applicationPrincipal: { type: 'customApplication' },
       }),
     ).toEqual(agentRolePermissions);
@@ -161,7 +176,7 @@ describe('computePrincipalsRecordsPermissions', () => {
       computeForPrincipals({
         mainPrincipal: {
           type: 'role',
-          roleId: 'default-role-id',
+          roleIds: ['default-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -177,7 +192,7 @@ describe('computePrincipalsRecordsPermissions', () => {
       computeForPrincipals({
         mainPrincipal: {
           type: 'role',
-          roleId: 'default-role-id',
+          roleIds: ['default-role-id'],
         },
         limitingPrincipal: {
           type: 'agent',
@@ -202,7 +217,7 @@ describe('computePrincipalsRecordsPermissions', () => {
 
     const recordsPermissions = computePrincipalsRecordsPermissions({
       principals: {
-        mainPrincipal: { type: 'role', roleId: 'main-role-id' },
+        mainPrincipal: { type: 'role', roleIds: ['main-role-id'] },
         limitingPrincipal: {
           type: 'agent',
           agentId: 'agent-id',
@@ -272,7 +287,7 @@ describe('computePrincipalsRecordsPermissions', () => {
 
     const recordsPermissions = computePrincipalsRecordsPermissions({
       principals: {
-        mainPrincipal: { type: 'role', roleId: 'shared-role-id' },
+        mainPrincipal: { type: 'role', roleIds: ['shared-role-id'] },
         limitingPrincipal: {
           type: 'agent',
           agentId: 'agent-id',
@@ -301,7 +316,7 @@ describe('computePrincipalsRecordsPermissions', () => {
       computeForPrincipals({
         mainPrincipal: {
           type: 'role',
-          roleId: 'default-role-id',
+          roleIds: ['default-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -315,7 +330,7 @@ describe('computePrincipalsRecordsPermissions', () => {
   it('should deny when one of the intersected roles is missing from the cache', () => {
     expect(
       computeForPrincipals({
-        mainPrincipal: { type: 'role', roleId: 'agent-role-id' },
+        mainPrincipal: { type: 'role', roleIds: ['agent-role-id'] },
         limitingPrincipal: {
           type: 'agent',
           agentId: 'agent-id',
@@ -336,7 +351,7 @@ describe('computePrincipalsRecordsPermissions', () => {
         mainPrincipal: {
           type: 'apiKey',
           apiKeyId: 'api-key-id',
-          roleId: 'missing-role-id',
+          roleIds: ['missing-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       }),
@@ -454,7 +469,7 @@ describe('computePrincipalsRecordsPermissions', () => {
             userWorkspaceIdByUserId: { 'user-id': 'user-workspace-id' },
           },
           userWorkspaceRoleMap: isDefined(memberRoleId)
-            ? { 'user-workspace-id': memberRoleId }
+            ? { 'user-workspace-id': [memberRoleId] }
             : {},
         },
       });
@@ -574,7 +589,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'application',
           applicationId: 'owning-application-id',
-          roleId: 'owning-application-role-id',
+          roleIds: ['owning-application-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -590,7 +605,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'application',
           applicationId: 'other-application-id',
-          roleId: 'other-application-role-id',
+          roleIds: ['other-application-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -606,7 +621,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member-id',
-          roleId: 'user-role-id',
+          roleIds: ['user-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       },
@@ -618,7 +633,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member-id',
-          roleId: 'user-role-id',
+          roleIds: ['user-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -634,7 +649,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member-id',
-          roleId: 'owning-application-role-id',
+          roleIds: ['owning-application-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       },
@@ -646,7 +661,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'apiKey',
           apiKeyId: 'api-key-id',
-          roleId: 'owning-application-role-id',
+          roleIds: ['owning-application-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       },
@@ -658,7 +673,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'agent',
           agentId: 'agent-id',
-          roleId: 'owning-application-role-id',
+          roleIds: ['owning-application-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       },
@@ -670,7 +685,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member-id',
-          roleId: 'owning-application-role-id',
+          roleIds: ['owning-application-role-id'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -723,7 +738,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
             userWorkspaceIdByUserId: { 'user-id': 'user-workspace-id' },
           },
           userWorkspaceRoleMap: {
-            'user-workspace-id': 'owning-application-role-id',
+            'user-workspace-id': ['owning-application-role-id'],
           },
         },
       });
@@ -823,7 +838,7 @@ describe('computePrincipalsRecordsPermissions disabled actions', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member-id',
-          roleId: 'user-role-id',
+          roleIds: ['user-role-id'],
         },
         applicationPrincipal: { type: 'customApplication' },
       },
@@ -940,13 +955,13 @@ describe('computePrincipalsRecordsPermissions with a scope', () => {
     });
 
     expect(
-      canReachSomeRecords({
+      canAccessThroughAllRecordsOrRlsPermission({
         objectRecordsPermissions: invoicePermissions,
         operationType: 'read',
       }),
     ).toBe(true);
     expect(
-      canReachSomeRecords({
+      canAccessThroughAllRecordsOrRlsPermission({
         objectRecordsPermissions: invoicePermissions,
         operationType: 'update',
       }),
@@ -959,7 +974,7 @@ describe('computePrincipalsRecordsPermissions with a scope', () => {
     });
 
     expect(
-      canReachSomeRecords({
+      canAccessThroughAllRecordsOrRlsPermission({
         objectRecordsPermissions: invoicePermissions,
         operationType: 'destroy',
       }),
@@ -970,13 +985,13 @@ describe('computePrincipalsRecordsPermissions with a scope', () => {
     const invoicePermissions = compute({});
 
     expect(
-      canReachSomeRecords({
+      canAccessThroughAllRecordsOrRlsPermission({
         objectRecordsPermissions: invoicePermissions,
         operationType: 'read',
       }),
     ).toBe(false);
     expect(
-      canReachSomeRecords({
+      canAccessThroughAllRecordsOrRlsPermission({
         objectRecordsPermissions: invoicePermissions,
         operationType: 'update',
       }),

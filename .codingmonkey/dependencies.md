@@ -38,6 +38,7 @@ The only pins of ours are the images in `infra/prod/k8s/`.
     release adds for `window.location.pathname`, `window.location.origin` and
     absolute public-file paths in `twenty-front`, and route them through
     `~/utils/getAppPathname`, `~/utils/buildAbsoluteAppUrl` or `BASE_PATH`.
+    `location.pathname` from the router's `useLocation()` is already relative.
   - **Sign-in from famiglia**: `AUTH_TRUSTED_PROXY_SECRET`; a request carrying
     `X-Famiglia-User` and a matching `X-Famiglia-Key` signs that person in
     (`trusted-proxy-auth` in `packages/twenty-server`), including before any
@@ -52,6 +53,12 @@ The only pins of ours are the images in `infra/prod/k8s/`.
     redirect callers pass `getAppPathname()`, and a workspace URL is compared
     with the current page by `new URL(url).origin`, never by slicing it.
   - `infra/` and `.codingmonkey/`, which upstream does not have.
+- After resolving, check that every file the fork changed since the last
+  release (`git diff --name-status twenty/v<old> HEAD -- packages/`, taken
+  before the merge) still exists and still differs from the new release. A
+  file upstream deletes or renames past git's rename detection loses our edit
+  silently (v2.60.0 renamed `AgentChat*` to `AiChat*` and `Inbox*`): carry the
+  edit, and its test, to the new file.
 - Node: upstream's `.nvmrc`, `engines.node` and the Dockerfile's `node` base
   image move together with the release. The checks run on the worker's Node,
   which must satisfy `engines.node`.
@@ -119,7 +126,7 @@ examples) — nothing here builds or deploys them; they move with the release.
 - **Every npm package, Node and the Dockerfile's pins, on their own**: held
   by upstream; they move only with a Twenty release. Lift: never — merge the
   release that carries them.
-- **Postgres 17 and 18** (newest: `18.6-trixie`): a new major needs the data
+- **Postgres 17 and 18** (newest: `18.7-trixie`): a new major needs the data
   directory upgraded (dump and restore, or `pg_upgrade`) — deploy.sh does
   neither — and upstream's own deployments are on Postgres 16. Needs its own
   ticket. Lift: a migration path for `twenty-db` and upstream supporting the

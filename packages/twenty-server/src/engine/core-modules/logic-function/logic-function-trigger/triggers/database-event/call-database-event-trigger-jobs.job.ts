@@ -4,7 +4,6 @@ import { isDefined } from 'twenty-shared/utils';
 
 import type { ObjectRecordEvent } from 'twenty-shared/database-events';
 
-import { buildLogicFunctionJobLimiter } from 'src/engine/core-modules/logic-function/utils/build-logic-function-job-limiter.util';
 import { findActiveFlatApplicationById } from 'src/engine/core-modules/application/utils/find-active-flat-application-by-id.util';
 import { ApplicationRepeatedEventRecorderService } from 'src/engine/core-modules/event-logs/emit/application-repeated-event-recorder.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -21,7 +20,6 @@ import { buildApplicationJobMemoryLimitLogEntry } from 'src/engine/core-modules/
 import { buildApplicationJobThrottledLogEntry } from 'src/engine/core-modules/logic-function/logic-function-trigger/utils/build-application-job-throttled-log-entry.util';
 import { buildLogicFunctionTriggerJobIds } from 'src/engine/core-modules/logic-function/logic-function-trigger/triggers/database-event/utils/build-logic-function-trigger-job-ids';
 import { findLogicFunctionsTriggeredByEventName } from 'src/engine/core-modules/logic-function/logic-function-trigger/triggers/database-event/utils/find-logic-functions-triggered-by-event-name';
-import { buildDatabaseEventTriggerConditionFields } from 'src/engine/workspace-event-emitter/utils/build-database-event-trigger-condition-fields.util';
 import { transformEventBatchToEventPayloads } from 'src/engine/core-modules/logic-function/logic-function-trigger/triggers/database-event/utils/transform-event-batch-to-event-payloads';
 import {
   LogicFunctionTriggerJob,
@@ -29,6 +27,7 @@ import {
 } from 'src/engine/core-modules/logic-function/logic-function-trigger/jobs/logic-function-trigger.job';
 import { RecordEventPermissionsReadService } from 'src/engine/permissions/record-event-permissions-read.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import { DatabaseEventTriggerConditionService } from 'src/engine/workspace-event-emitter/services/database-event-trigger-condition.service';
 import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
 
 @Processor(MessageQueue.triggerQueue)
@@ -42,6 +41,7 @@ export class CallDatabaseEventTriggerJobsJob {
     private readonly applicationJobEnqueueThrottlerService: ApplicationJobEnqueueThrottlerService,
     private readonly applicationRepeatedEventRecorderService: ApplicationRepeatedEventRecorderService,
     private readonly recordEventPermissionsReadService: RecordEventPermissionsReadService,
+    private readonly databaseEventTriggerConditionService: DatabaseEventTriggerConditionService,
   ) {}
 
   @Process(CallDatabaseEventTriggerJobsJob.name)
@@ -49,14 +49,11 @@ export class CallDatabaseEventTriggerJobsJob {
     workspaceEventBatch: WorkspaceEventBatch<ObjectRecordEvent>,
     { jobId }: MessageQueueJobContext,
   ) {
-    const {
-      flatLogicFunctionMaps,
-      flatApplicationMaps,
-      flatFieldMetadataMaps,
-    } = await this.workspaceCacheService.getOrRecompute(
-      workspaceEventBatch.workspaceId,
-      ['flatLogicFunctionMaps', 'flatApplicationMaps', 'flatFieldMetadataMaps'],
-    );
+    const { flatLogicFunctionMaps, flatApplicationMaps } =
+      await this.workspaceCacheService.getOrRecompute(
+        workspaceEventBatch.workspaceId,
+        ['flatLogicFunctionMaps', 'flatApplicationMaps'],
+      );
 
     const logicFunctionsToTrigger = findLogicFunctionsTriggeredByEventName({
       flatLogicFunctionMaps,
@@ -83,11 +80,6 @@ export class CallDatabaseEventTriggerJobsJob {
       return;
     }
 
-    const conditionFields = buildDatabaseEventTriggerConditionFields({
-      flatObjectMetadata: workspaceEventBatch.objectMetadata,
-      flatFieldMetadataMaps,
-    });
-
     for (const [
       applicationId,
       logicFunctions,
@@ -111,13 +103,19 @@ export class CallDatabaseEventTriggerJobsJob {
           },
           eventBatch: workspaceEventBatch,
         });
-      const logicFunctionPayloads = transformEventBatchToEventPayloads({
+      const logicFunctionPayloads = await transformEventBatchToEventPayloads({
         logicFunctions,
         workspaceEventBatch: {
           ...workspaceEventBatch,
           events: readableEvents,
         },
-        conditionFields,
+        filterMatchingEvents: (trigger) =>
+          this.databaseEventTriggerConditionService.filterMatchingEvents({
+            ...trigger,
+            workspaceId: workspaceEventBatch.workspaceId,
+            objectMetadata: workspaceEventBatch.objectMetadata,
+            application,
+          }),
         onConditionError: ({ logicFunctionId, errorMessage }) =>
           this.logger.warn(
             `Condition of logic function ${logicFunctionId} in workspace ${workspaceEventBatch.workspaceId} failed to evaluate: ${errorMessage}`,
@@ -159,13 +157,6 @@ export class CallDatabaseEventTriggerJobsJob {
         logicFunctionPayloads,
       });
 
-      const logicFunctionsById = new Map(
-        logicFunctions.map((logicFunction) => [
-          logicFunction.id,
-          logicFunction,
-        ]),
-      );
-
       try {
         await this.messageQueueService.bulkAdd<LogicFunctionTriggerJobData>(
           LogicFunctionTriggerJob.name,
@@ -175,12 +166,6 @@ export class CallDatabaseEventTriggerJobsJob {
               applicationUniversalIdentifier: application.universalIdentifier,
             },
             jobId: logicFunctionTriggerJobIds[index],
-            limiter: buildLogicFunctionJobLimiter({
-              logicFunctionId: logicFunctionPayload.logicFunctionId,
-              limiter: logicFunctionsById.get(
-                logicFunctionPayload.logicFunctionId,
-              )?.jobConfig?.limiter,
-            }),
             workspaceId: workspaceEventBatch.workspaceId,
             applicationUniversalIdentifier: application.universalIdentifier,
           })),
