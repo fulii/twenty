@@ -30,6 +30,14 @@ spec:
         app.kubernetes.io/name: twenty-db
     spec:
       automountServiceAccountToken: false
+      # On raspi5, the state node (homelab reorganization 2026-11-24): its taint admits
+      # only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: state
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: postgres
           image: docker.io/library/postgres:16.16-trixie@sha256:3950ad7c3148ca2175ef1b6c36c9efbf78957ae8fbe8b3a5d7c35af50500382f
@@ -89,6 +97,14 @@ spec:
         app.kubernetes.io/name: twenty-redis
     spec:
       automountServiceAccountToken: false
+      # On raspi5, the state node (homelab reorganization 2026-11-24): its taint admits
+      # only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: state
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: redis
           image: docker.io/library/redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
