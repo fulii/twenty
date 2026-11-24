@@ -166,6 +166,15 @@ spec:
       securityContext:
         fsGroup: 1000
       # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
+      # On the Mac mini, the amd64 service node (homelab reorganization
+      # 2026-11-24): its taint admits only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: amd64-service
+      tolerations:
+        - key: homelab.fuli.dev/amd64-service
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       initContainers:
         - name: wait-for-db
           image: docker.io/library/postgres:16.16-trixie@sha256:3950ad7c3148ca2175ef1b6c36c9efbf78957ae8fbe8b3a5d7c35af50500382f
@@ -253,6 +262,15 @@ spec:
       securityContext:
         fsGroup: 1000
       # The server migrates the database at start; the worker waits for it, as in the compose file.
+      # On the Mac mini, the amd64 service node (homelab reorganization
+      # 2026-11-24): its taint admits only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: amd64-service
+      tolerations:
+        - key: homelab.fuli.dev/amd64-service
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       initContainers:
         - name: wait-for-server
           image: docker.io/library/busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
