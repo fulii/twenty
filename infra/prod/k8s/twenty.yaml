@@ -165,6 +165,15 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 1000
+      # On the Mac mini, the amd64 service node (homelab reorganization
+      # 2026-11-24): its taint admits only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: amd64-service
+      tolerations:
+        - key: homelab.fuli.dev/amd64-service
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       # The entrypoint's first psql exits the pod while Postgres still starts (after a reboot too).
       initContainers:
         - name: wait-for-db
@@ -252,6 +261,15 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 1000
+      # On the Mac mini, the amd64 service node (homelab reorganization
+      # 2026-11-24): its taint admits only what tolerates it.
+      nodeSelector:
+        homelab.fuli.dev/purpose: amd64-service
+      tolerations:
+        - key: homelab.fuli.dev/amd64-service
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       # The server migrates the database at start; the worker waits for it, as in the compose file.
       initContainers:
         - name: wait-for-server
