@@ -122,6 +122,8 @@ export class WorkspaceQueryExecutorService
         'PG_POOL_ALLOW_EXIT_ON_IDLE',
       ),
       query_timeout: queryTimeoutMs,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
       ssl: this.twentyConfigService.get('PG_SSL_ALLOW_SELF_SIGNED')
         ? { rejectUnauthorized: false }
         : undefined,
