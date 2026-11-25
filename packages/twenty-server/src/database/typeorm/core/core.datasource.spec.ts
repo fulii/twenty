@@ -18,4 +18,14 @@ describe('typeORMCoreModuleOptions', () => {
 
     expect(typeORMCoreModuleOptions.poolSize).toBe(40);
   });
+
+  it('enables TCP keepalive so connections to a dead database are dropped', async () => {
+    const { typeORMCoreModuleOptions } =
+      await import('src/database/typeorm/core/core.datasource');
+
+    expect(typeORMCoreModuleOptions.extra).toMatchObject({
+      keepAlive: true,
+      keepAliveInitialDelayMillis: expect.any(Number),
+    });
+  });
 });
