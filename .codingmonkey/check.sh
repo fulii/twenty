@@ -8,6 +8,9 @@ export PATH="$(git rev-parse --show-toplevel)/.codingmonkey/bin:$PATH"
 # No Nx daemon (as in setup.sh), and test runners held to the parallelism the
 # worker hands every command: one Jest worker per core ran the host out of memory.
 export NX_DAEMON=false
+# Plugins in-process: Nx 24 refuses socket dirs under a / it does not own (the
+# worker's sandbox) and the workspace fallback exceeds the socket path limit.
+export NX_ISOLATE_PLUGINS=false
 workers=${CM_PARALLELISM:-2}
 # Jest at 16 workers over a release's ~1000 server suites got workers OOM-killed
 # on the shared host; 6 workers that recycle past 1 GB run them in under a minute.
