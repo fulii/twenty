@@ -9,15 +9,15 @@ import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { NavigationDrawerInboxContent } from '@/inbox/components/NavigationDrawerInboxContent';
 import { setInboxThreadList } from '@/inbox/testing/setInboxThreadList';
 import { type InboxThreadListItemData } from '@/inbox/types/InboxThreadListItemData';
-import { type AiChatThreadRecord } from '@/ai/types/AiChatThreadRecord';
-import { type DirectMessageSidebarItem } from '@/inbox/types/DirectMessageSidebarItem';
+import { type AiChatThreadRecord } from '@/ai-chat/threads/types/AiChatThreadRecord';
+import { type InboxDirectMessageSidebarItem } from '@/inbox/types/InboxDirectMessageSidebarItem';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
 import {
   jotaiStore,
   resetJotaiStore,
 } from '@/ui/utilities/state/jotai/jotaiStore';
-import { type AiChatChannel } from '@/ai/types/AiChatChannel';
+import { type AiChatChannel } from '@/ai-chat/threads/types/AiChatChannel';
 import { messages } from '~/locales/generated/en';
 import { mockedWorkspaceMemberData } from '~/testing/mock-data/users';
 
@@ -78,16 +78,16 @@ jest.mock('@/inbox/components/NavigationDrawerInboxChannelItem', () => ({
   }) => <div>{channel.name}</div>,
 }));
 
-jest.mock('@/inbox/components/NavigationDrawerDirectMessageItem', () => ({
-  NavigationDrawerDirectMessageItem: ({
+jest.mock('@/inbox/components/NavigationDrawerInboxDirectMessageItem', () => ({
+  NavigationDrawerInboxDirectMessageItem: ({
     directMessage,
   }: {
-    directMessage: DirectMessageSidebarItem;
+    directMessage: InboxDirectMessageSidebarItem;
   }) => <div>{directMessage.peer?.name}</div>,
 }));
 
-jest.mock('@/inbox/components/OpenDirectMessageButton', () => ({
-  OpenDirectMessageButton: () => null,
+jest.mock('@/inbox/components/InboxOpenDirectMessageButton', () => ({
+  InboxOpenDirectMessageButton: () => null,
 }));
 
 jest.mock('@/inbox/components/NavigationDrawerInboxThreadItem', () => ({
@@ -115,11 +115,11 @@ jest.mock('@/inbox/hooks/useInboxThreadList', () => ({
   useInboxThreadList: () => ({ threads: mockThreads, isLoading: false }),
 }));
 
-jest.mock('@/ai/hooks/useAiChatPageThreadId', () => ({
+jest.mock('@/ai-chat/hooks/useAiChatPageThreadId', () => ({
   useAiChatPageThreadId: () => null,
 }));
 
-jest.mock('@/ai/hooks/useAiChatThreadClick', () => ({
+jest.mock('@/ai-chat/threads/hooks/useAiChatThreadClick', () => ({
   useAiChatThreadClick: () => ({ handleThreadClick: jest.fn() }),
 }));
 

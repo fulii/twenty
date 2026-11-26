@@ -1,4 +1,7 @@
+import { useContinueAiChatPageInSidePanel } from '@/ai-chat/hooks/useContinueAiChatPageInSidePanel';
 import { useExecuteTasksOnAnyLocationChange } from '@/app/hooks/useExecuteTasksOnAnyLocationChange';
+import { useOpenWorkspaceSetupChatInSidePanel } from '@/onboarding/hooks/useOpenWorkspaceSetupChatInSidePanel';
+import { useRefreshShownInboxThreadList } from '@/inbox/hooks/useRefreshShownInboxThreadList';
 import { useWorkspaceRouteObjects } from '@/app/routing/components/WorkspaceRouteObjectsProvider';
 import { isAppEffectRedirectEnabledState } from '@/auth/states/isAppEffectRedirectEnabledState';
 import { useReturnToPath } from '@/auth/hooks/useReturnToPath';
@@ -102,6 +105,9 @@ export const PageChangeEffect = () => {
   );
 
   const { closeSidePanelMenu } = useSidePanelMenu();
+  const { continueAiChatPageInSidePanel } = useContinueAiChatPageInSidePanel();
+  const { openWorkspaceSetupChatInSidePanel } =
+    useOpenWorkspaceSetupChatInSidePanel();
   const { removePageFromSidePanelHistory } = useSidePanelHistory();
 
   const { saveReturnToPath, getReturnToPath, clearReturnToPath } =
@@ -115,9 +121,24 @@ export const PageChangeEffect = () => {
 
   const { openNewRecordTitleCell } = useOpenNewRecordTitleCell();
 
+  const { refreshShownInboxThreadList } = useRefreshShownInboxThreadList();
+
   useEffect(() => {
     if (!previousLocation || previousLocation !== location.pathname) {
-      if (!hasRoutedSidePanelTarget) {
+      const isAskAiOpenedInSidePanel =
+        !hasRoutedSidePanelTarget &&
+        (continueAiChatPageInSidePanel({
+          previousPathname: previousLocation,
+          location,
+        }) ||
+          (isWorkspaceLocationAvailableOnSurface(
+            workspaceRouteObjects,
+            'main',
+            location,
+          ) &&
+            openWorkspaceSetupChatInSidePanel(location)));
+
+      if (!hasRoutedSidePanelTarget && !isAskAiOpenedInSidePanel) {
         const currentPage = store.get(sidePanelPageInfoSelector.atom).page;
         const shouldKeepSidePanelOpen =
           currentPage === SidePanelPages.AskAI ||
@@ -156,6 +177,9 @@ export const PageChangeEffect = () => {
     hasRoutedSidePanelTarget,
     closeSidePanelMenu,
     removePageFromSidePanelHistory,
+    continueAiChatPageInSidePanel,
+    workspaceRouteObjects,
+    openWorkspaceSetupChatInSidePanel,
   ]);
 
   useEffect(() => {
@@ -268,6 +292,8 @@ export const PageChangeEffect = () => {
         if (!isEnteringInbox) {
           break;
         }
+
+        refreshShownInboxThreadList();
 
         resetFocusStackToFocusItem({
           focusStackItem: {
@@ -442,6 +468,7 @@ export const PageChangeEffect = () => {
     resetFocusStackToRecordIndex,
     resetFocusStackToFocusItem,
     openNewRecordTitleCell,
+    refreshShownInboxThreadList,
     store,
   ]);
 

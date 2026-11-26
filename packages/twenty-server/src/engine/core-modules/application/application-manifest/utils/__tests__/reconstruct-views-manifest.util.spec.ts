@@ -223,6 +223,7 @@ const buildFlatViewField = ({
   viewId: `${viewUniversalIdentifier}-id`,
   viewFieldGroupId: null,
   relationTargetFieldMetadataId: null,
+  relationScope: null,
   overrides: null,
   ...flatViewFieldProperties,
 });
@@ -331,6 +332,7 @@ const buildFlatViewSort = ({
   workspaceId: WORKSPACE_ID,
   applicationId: APP_ID,
   fieldMetadataId: `${viewSortManifest.fieldMetadataUniversalIdentifier}-id`,
+  relationTargetFieldMetadataId: null,
   viewId: `${viewUniversalIdentifier}-id`,
 });
 

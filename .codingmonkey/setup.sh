@@ -7,5 +7,8 @@ export PATH
 # No Nx daemon: started inside the worker's sandbox it hung the build for the
 # whole setup timeout, and nothing here runs Nx twice.
 export NX_DAEMON=false
+# Plugins in-process: Nx 24 refuses socket dirs under a / it does not own (the
+# worker's sandbox) and the workspace fallback exceeds the socket path limit.
+export NX_ISOLATE_PLUGINS=false
 yarn install --immutable
 npx nx run-many -t build -p twenty-shared twenty-oxlint-rules

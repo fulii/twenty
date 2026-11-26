@@ -7,4 +7,4 @@ CodingMonkey worker needs.
   `npx vitest run … --maxWorkers="$CM_PARALLELISM"`. Without it Jest starts one worker per core,
   and on this machine that ran out of memory for everything else on it.
 - Prefer a single spec file or `--findRelatedTests` over a package's whole suite.
-- Run Nx with `NX_DAEMON=false`, as `.codingmonkey/setup.sh` and `check.sh` do.
+- Run Nx with `NX_DAEMON=false NX_ISOLATE_PLUGINS=false`, as `.codingmonkey/setup.sh` and `check.sh` do.

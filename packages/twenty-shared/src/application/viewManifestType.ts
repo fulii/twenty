@@ -1,11 +1,13 @@
 import { type SyncableEntityOptions } from '@/application/syncableEntityOptionsType';
 import {
   type AggregateOperations,
+  type UniversalViewFieldRelationScope,
   type ViewCalendarLayout,
   type ViewFilterGroupLogicalOperator,
   type ViewFilterOperand,
   type ViewKey,
   type ViewOpenRecordIn,
+  type ViewPresetFilter,
   type ViewSortDirection,
   type ViewType,
   type ViewVisibility,
@@ -27,6 +29,8 @@ export type ViewFieldManifest = SyncableEntityOptions & {
   viewFieldGroupUniversalIdentifier?: string;
   isCanonical?: boolean;
   relationTargetFieldMetadataUniversalIdentifier?: string;
+  relationScope?: UniversalViewFieldRelationScope;
+  label?: string;
 };
 
 export type StandaloneViewFieldManifest = ViewFieldManifest & {
@@ -65,6 +69,7 @@ export type ViewSortManifest = SyncableEntityOptions & {
   fieldMetadataUniversalIdentifier: string;
   direction: ViewSortDirection;
   subFieldName?: string;
+  relationTargetFieldMetadataUniversalIdentifier?: string;
 };
 
 export type ViewManifest = SyncableEntityOptions & {
@@ -86,6 +91,7 @@ export type ViewManifest = SyncableEntityOptions & {
   mainGroupByFieldMetadataUniversalIdentifier?: string;
   shouldHideEmptyGroups?: boolean;
   shouldDisplayGroupsAsTabs?: boolean;
+  presetFilter?: ViewPresetFilter;
   groupLoadLimit?: number;
   anyFieldFilterValue?: string | null;
   kanbanColumnWidth?: number | null;

@@ -52,6 +52,7 @@ type UseNavigationMenuItemAddOptionsParams = {
   objectId: string | null;
   parentId?: string;
   currentItems: NavigationMenuItem[];
+  hiddenItems: NavigationMenuItem[];
   isSearchingAllItems: boolean;
   addItem: (input: NewNavigationMenuItemInput) => void;
   navigateToStep: (step: NavigationMenuItemAddStep) => void;
@@ -64,6 +65,7 @@ export const useNavigationMenuItemAddOptions = ({
   objectId,
   parentId,
   currentItems,
+  hiddenItems,
   isSearchingAllItems,
   addItem,
   navigateToStep,
@@ -71,6 +73,9 @@ export const useNavigationMenuItemAddOptions = ({
 }: UseNavigationMenuItemAddOptionsParams) => {
   const { t } = useLingui();
   const theme = useTheme();
+  const isParentFolder =
+    currentItems.find((item) => item.id === parentId)?.type ===
+    NavigationMenuItemType.FOLDER;
   const { getIcon } = useIcons();
 
   const {
@@ -91,7 +96,10 @@ export const useNavigationMenuItemAddOptions = ({
     objectMetadataIdsWithIndexView,
     objectMetadataIdsAlreadyAdded,
     viewIdsAlreadyAdded,
-  } = useNavigationMenuObjectMetadataForSection(currentItems);
+  } = useNavigationMenuObjectMetadataForSection([
+    ...currentItems,
+    ...hiddenItems,
+  ]);
   const {
     navigationMenuItemSearchRecords,
     recordSearchLoading,
@@ -170,11 +178,11 @@ export const useNavigationMenuItemAddOptions = ({
         {
           id: 'folder',
           label: t`Folder`,
-          contextualText: isDefined(parentId)
+          contextualText: isParentFolder
             ? t`Cannot nest folders into folders`
             : undefined,
-          Icon: isDefined(parentId) ? IconFolder : undefined,
-          icon: isDefined(parentId) ? undefined : (
+          Icon: isParentFolder ? IconFolder : undefined,
+          icon: isParentFolder ? undefined : (
             <ColoredIcon
               Icon={IconFolder}
               color={DEFAULT_NAVIGATION_MENU_ITEM_COLOR_FOLDER}
@@ -187,7 +195,7 @@ export const useNavigationMenuItemAddOptions = ({
               color: DEFAULT_NAVIGATION_MENU_ITEM_COLOR_FOLDER,
             });
           },
-          isDisabled: isDefined(parentId),
+          isDisabled: isParentFolder,
         },
         {
           id: 'link',

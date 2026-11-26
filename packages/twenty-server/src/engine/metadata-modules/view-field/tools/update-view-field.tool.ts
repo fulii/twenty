@@ -11,6 +11,7 @@ import { VIEW_FIELD_ACCESS_POLICY } from 'src/engine/metadata-modules/view-field
 
 @DefineTool({
   name: 'update_view_field',
+  isDestructive: true,
   category: ToolCategory.VIEW,
   accessPolicy: VIEW_FIELD_ACCESS_POLICY,
   description:
@@ -47,6 +48,8 @@ export class UpdateViewFieldTool extends BaseTool<
           position: input.position,
           aggregateOperation: input.aggregateOperation,
           relationTargetFieldMetadataId: input.relationTargetFieldMetadataId,
+          relationScope: input.relationScope,
+          label: input.label,
         },
       },
       workspaceId,
@@ -64,6 +67,8 @@ export class UpdateViewFieldTool extends BaseTool<
         position: viewField.position,
         aggregateOperation: viewField.aggregateOperation,
         relationTargetFieldMetadataId: viewField.relationTargetFieldMetadataId,
+        relationScope: viewField.relationScope,
+        label: viewField.label,
       },
     };
   }

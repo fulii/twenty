@@ -9,6 +9,12 @@ jest.mock('~/hooks/useNavigateApp', () => ({
   useNavigateApp: () => navigateAppMock,
 }));
 
+jest.mock('@/inbox/hooks/useRefreshShownInboxThreadList', () => ({
+  useRefreshShownInboxThreadList: () => ({
+    refreshShownInboxThreadList: jest.fn(),
+  }),
+}));
+
 jest.mock('~/config', () => ({
   BASE_PATH: '/crm',
 }));

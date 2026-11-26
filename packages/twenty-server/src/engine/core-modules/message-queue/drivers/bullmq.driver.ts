@@ -44,6 +44,7 @@ import { type MessageQueueWorkerOptions } from 'src/engine/core-modules/message-
 
 import { DEFAULT_JOB_PRIORITY } from 'src/engine/core-modules/message-queue/constants/default-job-priority.constant';
 import { QUEUE_JOB_CHANGED_EVENT } from 'src/engine/core-modules/message-queue/constants/queue-job-changed-event.constant';
+import { QUEUE_JOB_FAILED_EVENT } from 'src/engine/core-modules/message-queue/constants/queue-job-failed-event.constant';
 import { QUEUE_RETENTION } from 'src/engine/core-modules/message-queue/constants/queue-retention.constants';
 import { FairQueueScheduler } from 'src/engine/core-modules/message-queue/drivers/fairness/fair-queue-scheduler';
 import {
@@ -60,6 +61,7 @@ import {
   MessageQueueExceptionCode,
 } from 'src/engine/core-modules/message-queue/message-queue.exception';
 import { type QueueJobChangedEvent } from 'src/engine/core-modules/message-queue/types/queue-job-changed-event.type';
+import { type QueueJobFailedEvent } from 'src/engine/core-modules/message-queue/types/queue-job-failed-event.type';
 import { getJobKey } from 'src/engine/core-modules/message-queue/utils/get-job-key.util';
 import { buildQueueJobIdWithSuffix } from 'src/engine/core-modules/message-queue/utils/build-queue-job-id-with-suffix.util';
 import { buildQueueJobGroupKeys } from 'src/engine/core-modules/message-queue/utils/build-queue-job-group-keys.util';
@@ -123,9 +125,7 @@ export class BullMQDriver
       keyPrefix: options.prefix ?? 'bull',
       metricsService,
       getGroupLimiter: (queueName) =>
-        twentyConfigService.get('IS_WORKER_GROUP_LIMITER_ENABLED')
-          ? MESSAGE_QUEUE_WORKER_CONFIG[queueName].workerOptions.groupLimiter
-          : undefined,
+        MESSAGE_QUEUE_WORKER_CONFIG[queueName].workerOptions.groupLimiter,
     });
     this.jobSizeLimiter = new JobSizeLimiter(
       metricsService,
@@ -438,6 +438,7 @@ export class BullMQDriver
               id: job.id ?? '',
               name: job.name,
               retryLimit: Math.max(0, (job.opts.attempts ?? 1) - 1),
+              attemptsMade: job.attemptsMade,
               updateData: (data) => job.updateData(data),
               updateProgress: (progress) => job.updateProgress(progress),
               abortSignal,
@@ -487,10 +488,25 @@ export class BullMQDriver
       void this.clearOversizedCompletedJobData(job);
       this.releaseFinishedJobMemory({ queueName, job });
     });
-    this.workerMap[queueName].on('failed', (job) => {
-      if (isDefined(job?.finishedOn)) {
-        this.releaseFinishedJobMemory({ queueName, job });
+    this.workerMap[queueName].on('failed', (job, error) => {
+      if (!isDefined(job?.finishedOn)) {
+        return;
       }
+
+      this.releaseFinishedJobMemory({ queueName, job });
+      this.eventEmitter.emit(QUEUE_JOB_FAILED_EVENT, {
+        queueName,
+        job: {
+          id: job.id ?? '',
+          name: job.name,
+          data: job.data,
+          attemptsMade: job.attemptsMade,
+        },
+        error: {
+          name: error.name,
+          message: error.message,
+        },
+      } satisfies QueueJobFailedEvent);
     });
 
     this.workerMap[queueName].on('completed', (job) => {
@@ -712,7 +728,6 @@ export class BullMQDriver
     jobName,
     jobs,
     additionalGroupKeys,
-    shouldReportSizes = false,
   }: {
     queueName: MessageQueue;
     jobName: string;
@@ -723,20 +738,12 @@ export class BullMQDriver
       scope: QueueJobScope;
     }[];
     additionalGroupKeys?: string[];
-    shouldReportSizes?: boolean;
   }): Promise<{ preparedJobs: PreparedJob[]; availableBytes: number | null }> {
-    const isLimitingEnabled = this.jobMemoryLimiter.isEnabled();
     const sizedJobs = jobs.map(({ index, data, options, scope }) => ({
       index,
       groupKeys: buildQueueJobGroupKeys({ scope, additionalGroupKeys }),
-      sizeBytes:
-        isLimitingEnabled || shouldReportSizes
-          ? computeJobSizeBytes({ data, options })
-          : 0,
-      options: {
-        ...options,
-        jobId: options.jobId ?? (isLimitingEnabled ? v4() : undefined),
-      },
+      sizeBytes: computeJobSizeBytes({ data, options }),
+      options: { ...options, jobId: options.jobId ?? v4() },
     }));
 
     this.jobSizeLimiter.checkJobSizesOrThrow({
@@ -749,14 +756,12 @@ export class BullMQDriver
       })),
     });
 
-    const existingJobIds = isLimitingEnabled
-      ? await this.findExistingJobIds({
-          queueName,
-          jobIds: jobs.flatMap(({ options }) =>
-            isDefined(options.jobId) ? [options.jobId] : [],
-          ),
-        })
-      : new Set<string>();
+    const existingJobIds = await this.findExistingJobIds({
+      queueName,
+      jobIds: jobs.flatMap(({ options }) =>
+        isDefined(options.jobId) ? [options.jobId] : [],
+      ),
+    });
     const chargeableJobs = sizedJobs.filter(
       ({ options }) =>
         isDefined(options.jobId) && !existingJobIds.has(options.jobId),
@@ -1068,7 +1073,6 @@ export class BullMQDriver
         scope: job,
       })),
       additionalGroupKeys: options?.fairnessGroupKeys,
-      shouldReportSizes: true,
     });
 
     // BullMQ ignores a re-added job id, so it must not take a pacing slot.

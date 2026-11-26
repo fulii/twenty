@@ -26,6 +26,7 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 import { type IDataloaders } from 'src/engine/dataloaders/dataloader.interface';
 import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { isPrivatableEntityVisibleToCaller } from 'src/engine/permissions/metadata-permissions/utils/is-privatable-entity-visible-to-caller.util';
 import { AccessPolicyGuard } from 'src/engine/guards/access-policy.guard';
 import { AiAgentRoleService } from 'src/engine/metadata-modules/ai/ai-agent-role/ai-agent-role.service';
 import { AgentDTO } from 'src/engine/metadata-modules/ai/ai-agent/dtos/agent.dto';
@@ -371,10 +372,14 @@ export class RoleResolver {
     @AuthWorkspace() workspace: WorkspaceEntity,
     @Context() context: { loaders: IDataloaders },
   ): Promise<AgentDTO[]> {
-    return context.loaders.agentsByRoleIdLoader.load({
+    const agents = await context.loaders.agentsByRoleIdLoader.load({
       workspaceId: workspace.id,
       roleId: role.id,
     });
+
+    return agents.filter((agent) =>
+      isPrivatableEntityVisibleToCaller({ privatableEntity: agent }),
+    );
   }
 
   @ResolveField('apiKeys', () => [ApiKeyForRoleDTO])

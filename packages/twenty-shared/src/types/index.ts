@@ -20,6 +20,8 @@ export type { ArraySortDirection } from './ArraySortDirection';
 export type { AssertUnreachable } from './AssertUnreachable';
 export { BlocklistScope } from './BlocklistScope';
 export type { BrandedType, HasBrandedType } from './BrandedType';
+export type { BuiltInSectionKey } from './BuiltInSectionKey';
+export { BUILT_IN_SECTION_KEYS } from './BuiltInSectionKey';
 export { CalendarChannelContactAutoCreationPolicy } from './CalendarChannelContactAutoCreationPolicy';
 export { CalendarChannelSyncStage } from './CalendarChannelSyncStage';
 export { CalendarChannelSyncStatus } from './CalendarChannelSyncStatus';
@@ -94,6 +96,8 @@ export type { ExcludeFunctions } from './ExcludeFunctions';
 export type { ExpressionDate } from './ExpressionDate';
 export type { ExpressionDatePart } from './ExpressionDatePart';
 export type { ExpressionDateUnit } from './ExpressionDateUnit';
+export type { ExpressionSyntaxError } from './ExpressionSyntaxError';
+export type { ExpressionSyntaxErrorCode } from './ExpressionSyntaxErrorCode';
 export type { ExtractPropertiesThatEndsWithId } from './ExtractPropertiesThatEndsWithId';
 export type { ExtractPropertiesThatEndsWithIds } from './ExtractPropertiesThatEndsWithIds';
 export type { ExtractSerializedRelationProperties } from './ExtractSerializedRelationProperties';
@@ -208,7 +212,10 @@ export type {
 export { OrderByDirection } from './ObjectRecordGroupBy';
 export { ObjectRecordGroupByDateGranularity } from './ObjectRecordGroupByDateGranularity';
 export type { ObjectRecordsOperationType } from './ObjectRecordsOperationType';
-export type { ObjectRecordsPermissions } from './ObjectRecordsPermissions';
+export type {
+  UnreadableNestedFieldPermission,
+  ObjectRecordsPermissions,
+} from './ObjectRecordsPermissions';
 export { ObjectSharingReach } from './ObjectSharingReach';
 export { OpenRecordIn } from './OpenRecordIn';
 export type { OrderBy } from './OrderBy';
@@ -274,6 +281,7 @@ export { RecordFilterGroupLogicalOperator } from './RecordFilterGroupLogicalOper
 export { RecordFilterOperand } from './RecordFilterOperand';
 export type { RecordFilterValueDependencies } from './RecordFilterValueDependencies';
 export type { RecordGqlFields } from './RecordGqlFields';
+export type { RecordGqlFieldsRelationWithArguments } from './RecordGqlFieldsRelationWithArguments';
 export type {
   UUIDFilterValue,
   IsFilter,
@@ -360,14 +368,22 @@ export type { ValidationRuleFieldDescriptor } from './ValidationRuleFieldDescrip
 export type { ValidationRuleFunctionName } from './ValidationRuleFunctionName';
 export { IsValidGraphQLEnumName } from './validators/is-valid-graphql-enum-name.validator';
 export { ViewCalendarLayout } from './ViewCalendarLayout';
+export type {
+  ViewFieldRelationScopeFilter,
+  ViewFieldRelationScopeFilterGroup,
+  ViewFieldRelationScopeSort,
+  ViewFieldRelationScope,
+  UniversalViewFieldRelationScope,
+} from './ViewFieldRelationScope';
 export { ViewFilterGroupLogicalOperator } from './ViewFilterGroupLogicalOperator';
 export { ViewFilterOperand } from './ViewFilterOperand';
 export { ViewFilterOperandDeprecated } from './ViewFilterOperandDeprecated';
+export type { ViewFilterValue } from './ViewFilterValue';
 export { ViewKey } from './ViewKey';
 export { ViewOpenRecordIn } from './ViewOpenRecordIn';
+export { ViewPresetFilter } from './ViewPresetFilter';
 export { ViewSortDirection } from './ViewSortDirection';
 export { ViewType } from './ViewType';
 export { ViewVisibility } from './ViewVisibility';
 export { WebhookSubscriptionChannelType } from './WebhookSubscriptionChannelType';
 export { WebhookSubscriptionStatus } from './WebhookSubscriptionStatus';
-export { WorkflowVisibility } from './WorkflowVisibility';

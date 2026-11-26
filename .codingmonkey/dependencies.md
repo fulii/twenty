@@ -39,6 +39,9 @@ The only pins of ours are the images in `infra/prod/k8s/`.
     absolute public-file paths in `twenty-front`, and route them through
     `~/utils/getAppPathname`, `~/utils/buildAbsoluteAppUrl` or `BASE_PATH`.
     `location.pathname` from the router's `useLocation()` is already relative.
+    `public/service-worker.js` is static: it resolves app paths against
+    `self.registration.scope`, and is registered at
+    `${BASE_PATH}/service-worker.js`.
   - **Sign-in from famiglia**: `AUTH_TRUSTED_PROXY_SECRET`; a request carrying
     `X-Famiglia-User` and a matching `X-Famiglia-Key` signs that person in
     (`trusted-proxy-auth` in `packages/twenty-server`), including before any
@@ -59,6 +62,16 @@ The only pins of ours are the images in `infra/prod/k8s/`.
   file upstream deletes or renames past git's rename detection loses our edit
   silently (v2.60.0 renamed `AgentChat*` to `AiChat*` and `Inbox*`): carry the
   edit, and its test, to the new file.
+- Release tags sit on upstream's release branches, so the last release is
+  not an ancestor of the next (`git merge-base --is-ancestor twenty/v<old>
+  twenty/v<new>` fails) and the merge base is an older upstream `main`
+  commit. The old release's patch commits then merge a second time: v2.63.0
+  conflicted in server files the fork never touched, and auto-merged a
+  duplicate `requestedRoleId` column into `application.entity.ts`. After
+  resolving, every file outside the fork's own list must equal the new tag:
+  `git diff --cached --name-status twenty/v<new>` lists only fork files
+  (carried renames included), `infra/` and `.codingmonkey/`; check out
+  anything else from the tag, and delete what the tag does not have.
 - Node: upstream's `.nvmrc`, `engines.node` and the Dockerfile's `node` base
   image move together with the release. The checks run on the worker's Node,
   which must satisfy `engines.node`.
@@ -82,7 +95,7 @@ index. Each moves to the newest tag of its line (same major; for BuildKit the
 | Pin | File | Line | Newest tag |
 | --- | --- | --- | --- |
 | `docker.io/library/postgres:<16.x>-trixie` | `twenty.yaml` (twice: the database and the server's wait-for-db) | 16 | `curl -s 'https://hub.docker.com/v2/repositories/library/postgres/tags?page_size=100&name=16.'` |
-| `docker.io/library/redis:<8.x.y>-alpine` | `twenty.yaml` | 8 | same, `library/redis`, `name=8.` (several pages: also `name=8.1`, `name=8.2`, …) |
+| `docker.io/library/redis:<8.x.y>-alpine` | `twenty.yaml` | 8 | same, `library/redis`, `name=alpine`, following `next` through every page |
 | `docker.io/library/busybox:<1.x.y>-musl` | `twenty.yaml` (storage init) | 1 | same, `library/busybox`, `name=musl` |
 | `curlimages/curl:<8.x.y>` | `client.yaml` | 8 | same, `curlimages/curl`, `name=8.` |
 | `moby/buildkit:<v0.x.y>-rootless` | `builder.yaml` | v0 | same, `moby/buildkit`, `name=rootless` |
@@ -126,7 +139,7 @@ examples) — nothing here builds or deploys them; they move with the release.
 - **Every npm package, Node and the Dockerfile's pins, on their own**: held
   by upstream; they move only with a Twenty release. Lift: never — merge the
   release that carries them.
-- **Postgres 17 and 18** (newest: `18.7-trixie`): a new major needs the data
+- **Postgres 17, 18 and 19** (newest: `19.0-trixie`): a new major needs the data
   directory upgraded (dump and restore, or `pg_upgrade`) — deploy.sh does
   neither — and upstream's own deployments are on Postgres 16. Needs its own
   ticket. Lift: a migration path for `twenty-db` and upstream supporting the

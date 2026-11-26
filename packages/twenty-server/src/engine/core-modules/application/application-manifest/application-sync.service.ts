@@ -1,4 +1,4 @@
-import { ApplicationFrontComponentSourceService } from 'src/engine/core-modules/application/application-manifest/services/application-front-component-source.service';
+import { ApplicationSourceService } from 'src/engine/core-modules/application/application-manifest/services/application-source.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { type Manifest } from 'twenty-shared/application';
@@ -18,6 +18,7 @@ import { ApplicationRegistrationSourceType } from 'src/engine/core-modules/appli
 import { resolveSyncedApplicationCapabilities } from 'src/engine/core-modules/application/utils/resolve-synced-application-capabilities.util';
 import { resolveSyncedApplicationIframeMediaPermissions } from 'src/engine/core-modules/application/utils/resolve-synced-application-iframe-media-permissions.util';
 import { toApplicationCapabilities } from 'src/engine/core-modules/application/utils/to-application-capabilities.util';
+import { toApplicationBillingPricesOrThrow } from 'src/engine/core-modules/application/utils/to-application-billing-prices-or-throw.util';
 import { toRequestedIframeMediaPermissionsOrThrow } from 'src/engine/core-modules/application/utils/to-requested-iframe-media-permissions-or-throw.util';
 import { ApplicationManifestMigrationService } from 'src/engine/core-modules/application/application-manifest/application-manifest-migration.service';
 import { ApplicationUninstallService } from 'src/engine/core-modules/application/application-manifest/services/application-uninstall.service';
@@ -51,7 +52,7 @@ export class ApplicationSyncService {
 
   constructor(
     private readonly applicationService: ApplicationService,
-    private readonly applicationFrontComponentSourceService: ApplicationFrontComponentSourceService,
+    private readonly applicationSourceService: ApplicationSourceService,
     private readonly applicationLookupService: ApplicationLookupService,
     private readonly applicationManifestMigrationService: ApplicationManifestMigrationService,
     private readonly workspaceMigrationValidateBuildAndRunService: WorkspaceMigrationValidateBuildAndRunService,
@@ -81,7 +82,7 @@ export class ApplicationSyncService {
     persistVersion?: boolean;
     shouldDeferActions?: boolean;
   }): Promise<ApplicationManifestSyncResult> {
-    this.applicationFrontComponentSourceService.validateOrThrow(manifest);
+    this.applicationSourceService.validateOrThrow(manifest);
     // Checked upfront: server variables reach the registration only after the workspace changes
     const reservedVariableNames =
       findReservedVariableNamesInApplicationManifest(manifest.application);
@@ -96,6 +97,7 @@ export class ApplicationSyncService {
     toRequestedIframeMediaPermissionsOrThrow(
       manifest.application.requestedIframeMediaPermissions,
     );
+    toApplicationBillingPricesOrThrow(manifest.application.billing?.prices);
 
     const ownerFlatApplication: FlatApplication = dryRun
       ? await this.resolveDryRunOwnerFlatApplication({ workspaceId, manifest })
@@ -125,10 +127,13 @@ export class ApplicationSyncService {
     }
 
     if (!dryRun) {
-      await this.applicationFrontComponentSourceService.store({
-        workspaceId,
-        manifest,
-      });
+      try {
+        await this.applicationSourceService.store({ workspaceId, manifest });
+      } catch (error) {
+        this.logger.warn(
+          `Application ${manifest.application.universalIdentifier} sync succeeded in workspace ${workspaceId} but its source inventory could not be stored: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
     }
 
     if (!dryRun && isDefined(ownerFlatApplication.applicationRegistrationId)) {
@@ -199,6 +204,7 @@ export class ApplicationSyncService {
       yarnLockFileId: null,
       availablePackages: {},
       billing: manifest.application.billing ?? {},
+      acceptedBillingPrices: null,
       grantedCapabilities: toApplicationCapabilities(
         manifest.application.requestedCapabilities,
       ),
@@ -206,7 +212,6 @@ export class ApplicationSyncService {
         manifest.application.requestedIframeMediaPermissions,
       ),
       logicFunctionLayerId: null,
-      defaultRoleId: null,
       requestedRoleId: null,
       defaultRole: null,
       settingsCustomTabFrontComponentId: null,

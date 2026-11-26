@@ -27,15 +27,15 @@ import { AGENT_CHAT_THREAD_PRESET_FILTER } from 'twenty-shared/ai';
 
 import { INBOX_LAYOUT } from '@/inbox/constants/InboxLayout';
 import { INBOX_LIST_PANE_WIDTH } from '@/inbox/constants/InboxListPaneWidth';
-import { AI_CHAT_NEW_THREAD_PATH_SEGMENT } from '@/ai/constants/AiChatNewThreadPathSegment';
+import { AI_CHAT_NEW_THREAD_PATH_SEGMENT } from '@/ai-chat/constants/AiChatNewThreadPathSegment';
 import { inboxSelectedThreadListSourceState } from '@/inbox/states/inboxSelectedThreadListSourceState';
 import { INBOX_RECENT_THREAD_LIST_SOURCE } from '@/inbox/constants/InboxRecentThreadListSource';
 import { inboxThreadListFamilyState } from '@/inbox/states/inboxThreadListFamilyState';
 import { getInboxThreadListSourceKey } from '@/inbox/utils/getInboxThreadListSourceKey';
-import { aiChatThreadParticipantsState } from '@/ai/states/aiChatThreadParticipantsState';
+import { aiChatThreadParticipantsState } from '@/ai-chat/threads/states/aiChatThreadParticipantsState';
 import { inboxLayoutState } from '@/inbox/states/inboxLayoutState';
 import { initializeNewAiChatStory } from '@/inbox/testing/initializeNewAiChatStory';
-import { type AiChatThreadRecord } from '@/ai/types/AiChatThreadRecord';
+import { type AiChatThreadRecord } from '@/ai-chat/threads/types/AiChatThreadRecord';
 import { MAIN_CONTEXT_STORE_INSTANCE_ID } from '@/context-store/constants/MainContextStoreInstanceId';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
@@ -47,6 +47,8 @@ import { sidePanelNavigationStackState } from '@/side-panel/states/sidePanelNavi
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 import { InboxPage } from '~/pages/inbox/InboxPage';
 import { MemoryRouterAppNavigatorProvider } from '~/testing/components/MemoryRouterAppNavigatorProvider';
+import { TEST_CHAT_OBJECT_METADATA_ID } from '~/testing/constants/TestChatObjectMetadataId';
+import { ChatObjectMetadataDecorator } from '~/testing/decorators/ChatObjectMetadataDecorator';
 import { ObjectMetadataItemsDecorator } from '~/testing/decorators/ObjectMetadataItemsDecorator';
 import { RootDecorator } from '~/testing/decorators/RootDecorator';
 import { ToastDecorator } from '~/testing/decorators/ToastDecorator';
@@ -58,9 +60,6 @@ const FIRST_THREAD_TITLE = 'Qualify the lead';
 const SECOND_THREAD_TITLE = 'Prepare the customer call';
 const THREAD_ACTIVITY_AT = '2026-10-21T09:00:00.000Z';
 const THREAD_ARCHIVED_AT = '2026-10-21T11:00:00.000Z';
-const CHAT_OBJECT_METADATA_ID = '20202020-0000-4000-8000-0000000000cc';
-const CHAT_TARGET_OBJECT_METADATA_ID = '20202020-0000-4000-8000-0000000000dd';
-const CHAT_FIELD_NAMES = ['id', 'title', 'createdAt', 'updatedAt', 'deletedAt'];
 const NEW_CHAT_PATH = getAppPath(AppPath.AiChatInbox, {
   threadId: AI_CHAT_NEW_THREAD_PATH_SEGMENT,
 });
@@ -156,74 +155,6 @@ const InboxRouteDecorator: Decorator = (Story) => (
   </HelmetProvider>
 );
 
-const loadChatRecordMetadata = () => {
-  const objectMetadataItems = jotaiStore.get(objectMetadataItemsSelector.atom);
-  const objectMetadataTemplate = objectMetadataItems.find(
-    ({ nameSingular }) => nameSingular === StandardObjectNameSingular.Note,
-  );
-
-  assertIsDefinedOrThrow(objectMetadataTemplate);
-
-  const chatObjectDefinitions = [
-    {
-      id: CHAT_OBJECT_METADATA_ID,
-      nameSingular: StandardObjectNameSingular.AgentChatThread,
-      namePlural: 'agentChatThreads',
-      labelSingular: 'Chat',
-      labelPlural: 'Chats',
-      labelFieldName: 'title',
-      fieldNames: CHAT_FIELD_NAMES,
-    },
-    {
-      id: CHAT_TARGET_OBJECT_METADATA_ID,
-      nameSingular: StandardObjectNameSingular.AgentChatThreadTarget,
-      namePlural: 'agentChatThreadTargets',
-      labelSingular: 'Chat target',
-      labelPlural: 'Chat targets',
-      labelFieldName: 'id',
-      fieldNames: ['id'],
-    },
-  ];
-  const chatObjectMetadataItems = chatObjectDefinitions.map(
-    ({ labelFieldName, fieldNames, ...objectDefinition }) => {
-      const fields = objectMetadataTemplate.fields
-        .filter(({ name }) => fieldNames.includes(name))
-        .map((field) => {
-          const id = uuidv4();
-
-          return {
-            ...field,
-            id,
-            universalIdentifier: id,
-            objectMetadataId: objectDefinition.id,
-          };
-        });
-      const labelField = fields.find(({ name }) => name === labelFieldName);
-
-      assertIsDefinedOrThrow(labelField);
-
-      return {
-        ...objectMetadataTemplate,
-        ...objectDefinition,
-        universalIdentifier: objectDefinition.id,
-        labelIdentifierFieldMetadataId: labelField.id,
-        isSystem: true,
-        isSearchable: false,
-        fields,
-        readableFields: fields,
-        updatableFields: fields,
-        indexMetadatas: [],
-        searchFieldMetadatas: [],
-      };
-    },
-  );
-
-  setTestObjectMetadataItemsInMetadataStore(jotaiStore, [
-    ...objectMetadataItems,
-    ...chatObjectMetadataItems,
-  ]);
-};
-
 const getThreadRow = ({
   canvasElement,
   title,
@@ -242,17 +173,22 @@ const getThreadRow = ({
 };
 
 const archiveThread = (threadId: string) => {
-  const participants = jotaiStore.get(aiChatThreadParticipantsState.atom);
-  const participant = participants?.[threadId];
+  const participants = jotaiStore.get(
+    aiChatThreadParticipantsState.atom,
+  ).rowsByThreadId;
+  const participant = participants[threadId];
 
   assertIsDefinedOrThrow(participant);
 
   jotaiStore.set(aiChatThreadParticipantsState.atom, {
-    ...participants,
-    [threadId]: {
-      ...participant,
-      archivedAt: THREAD_ARCHIVED_AT,
-      updatedAt: THREAD_ARCHIVED_AT,
+    isLoaded: true,
+    rowsByThreadId: {
+      ...participants,
+      [threadId]: {
+        ...participant,
+        archivedAt: THREAD_ARCHIVED_AT,
+        updatedAt: THREAD_ARCHIVED_AT,
+      },
     },
   });
 };
@@ -263,6 +199,7 @@ const meta = {
   decorators: [
     InboxRouteDecorator,
     ComponentDecorator,
+    ChatObjectMetadataDecorator,
     ObjectMetadataItemsDecorator,
     RootDecorator,
     ToastDecorator,
@@ -285,9 +222,9 @@ const meta = {
         lastLoadedActivityAt: null,
       },
     );
-    jotaiStore.set(
-      aiChatThreadParticipantsState.atom,
-      Object.fromEntries(
+    jotaiStore.set(aiChatThreadParticipantsState.atom, {
+      isLoaded: true,
+      rowsByThreadId: Object.fromEntries(
         THREADS.map(({ id }) => [
           id,
           {
@@ -304,7 +241,7 @@ const meta = {
           },
         ]),
       ),
-    );
+    });
 
     for (const thread of THREADS) {
       jotaiStore.set(recordStoreFamilyState.atomFamily(thread.id), thread);
@@ -340,7 +277,7 @@ const meta = {
             objectMetadataItemsSelector.atom,
           );
           const objectMetadataItem = objectMetadataItems.find(
-            ({ id }) => id === CHAT_OBJECT_METADATA_ID,
+            ({ id }) => id === TEST_CHAT_OBJECT_METADATA_ID,
           );
 
           assertIsDefinedOrThrow(objectMetadataItem);
@@ -439,7 +376,6 @@ export const SavedChatNavigationClearsSelection: Story = {
     const user = userEvent.setup();
 
     await canvas.findByText(FIRST_THREAD_TITLE);
-    loadChatRecordMetadata();
     jotaiStore.set(inboxLayoutState.atom, INBOX_LAYOUT.SPLIT_VIEW);
     await user.click(
       within(
@@ -507,7 +443,6 @@ export const CloseConversationPane: Story = {
     const user = userEvent.setup();
 
     await canvas.findByText(FIRST_THREAD_TITLE);
-    loadChatRecordMetadata();
 
     const list = canvas.getByRole('region', { name: 'Conversation list' });
     const fullListWidth = list.getBoundingClientRect().width;
@@ -598,7 +533,6 @@ export const AskAiAfterClosingConversation: Story = {
     const user = userEvent.setup();
 
     await canvas.findByText(FIRST_THREAD_TITLE);
-    loadChatRecordMetadata();
     await user.click(
       within(
         getThreadRow({ canvasElement, title: FIRST_THREAD_TITLE }),
@@ -626,7 +560,6 @@ export const ClosedConversationHistory: Story = {
     const user = userEvent.setup();
 
     await canvas.findByText(FIRST_THREAD_TITLE);
-    loadChatRecordMetadata();
     await user.click(
       within(
         getThreadRow({ canvasElement, title: FIRST_THREAD_TITLE }),
@@ -672,7 +605,6 @@ export const TriageAfterReopeningConversation: Story = {
     const user = userEvent.setup();
 
     await canvas.findByText(FIRST_THREAD_TITLE);
-    loadChatRecordMetadata();
     await user.click(
       within(
         getThreadRow({ canvasElement, title: FIRST_THREAD_TITLE }),

@@ -6,7 +6,9 @@ import { findManyFlatEntityByIdInFlatEntityMapsOrThrow } from 'src/engine/metada
 import { findManyFlatEntityByUniversalIdentifierInUniversalFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-many-flat-entity-by-universal-identifier-in-universal-flat-entity-maps-or-throw.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { type FlatViewField } from 'src/engine/metadata-modules/flat-view-field/types/flat-view-field.type';
+import { isViewFieldRelationScopeReferencingField } from 'src/engine/metadata-modules/flat-view-field/utils/is-view-field-relation-scope-referencing-field.util';
 import { type FlatViewFilter } from 'src/engine/metadata-modules/flat-view-filter/types/flat-view-filter.type';
+import { type FlatViewSort } from 'src/engine/metadata-modules/flat-view-sort/types/flat-view-sort.type';
 import { type FlatView } from 'src/engine/metadata-modules/flat-view/types/flat-view.type';
 
 type HandleFlatFieldMetadataDeactivationSideEffectsArgs = FromTo<
@@ -19,6 +21,7 @@ type HandleFlatFieldMetadataDeactivationSideEffectsArgs = FromTo<
     | 'flatViewFilterMaps'
     | 'flatViewFieldMaps'
     | 'flatViewGroupMaps'
+    | 'flatViewSortMaps'
   >;
 
 export type FieldMetadataDeactivationSideEffect = {
@@ -26,6 +29,7 @@ export type FieldMetadataDeactivationSideEffect = {
   flatViewsToUpdate: FlatView[];
   flatViewFieldsToDelete: FlatViewField[];
   flatViewFiltersToDelete: FlatViewFilter[];
+  flatViewSortsToDelete: FlatViewSort[];
 };
 
 export const handleFieldMetadataDeactivationSideEffects = ({
@@ -34,6 +38,7 @@ export const handleFieldMetadataDeactivationSideEffects = ({
   flatViewFieldMaps,
   flatViewFilterMaps,
   flatViewGroupMaps,
+  flatViewSortMaps,
 }: HandleFlatFieldMetadataDeactivationSideEffectsArgs): FieldMetadataDeactivationSideEffect => {
   const flatViewFiltersToDelete = findManyFlatEntityByIdInFlatEntityMapsOrThrow(
     {
@@ -47,19 +52,33 @@ export const handleFieldMetadataDeactivationSideEffects = ({
     flatEntityMaps: flatViewFieldMaps,
   });
 
-  // relationTargetFieldMetadataId has no inverse relation on field metadata
-  const flatLookupViewFieldsOnField = Object.values(
+  // No inverse relation to scan; scope columns are removed since dropping a condition would widen them
+  const flatViewFieldsReferencingField = Object.values(
     flatViewFieldMaps.byUniversalIdentifier,
   ).filter(
     (flatViewField): flatViewField is FlatViewField =>
       isDefined(flatViewField) &&
-      flatViewField.relationTargetFieldMetadataId === fromFlatFieldMetadata.id,
+      (flatViewField.relationTargetFieldMetadataId ===
+        fromFlatFieldMetadata.id ||
+        isViewFieldRelationScopeReferencingField({
+          universalRelationScope: flatViewField.universalRelationScope,
+          fieldMetadataUniversalIdentifier:
+            fromFlatFieldMetadata.universalIdentifier,
+        })),
   );
 
   const flatViewFieldsToDelete = [
     ...flatViewFieldsOnField,
-    ...flatLookupViewFieldsOnField,
+    ...flatViewFieldsReferencingField,
   ];
+
+  const flatViewSortsToDelete = Object.values(
+    flatViewSortMaps.byUniversalIdentifier,
+  ).filter(
+    (flatViewSort): flatViewSort is FlatViewSort =>
+      isDefined(flatViewSort) &&
+      flatViewSort.relationTargetFieldMetadataId === fromFlatFieldMetadata.id,
+  );
 
   const flatViewsAffected: FlatView[] =
     findManyFlatEntityByIdInFlatEntityMapsOrThrow({
@@ -134,5 +153,6 @@ export const handleFieldMetadataDeactivationSideEffects = ({
     flatViewsToDelete,
     flatViewFieldsToDelete,
     flatViewFiltersToDelete,
+    flatViewSortsToDelete,
   };
 };

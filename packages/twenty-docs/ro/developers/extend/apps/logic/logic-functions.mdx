@@ -352,7 +352,7 @@ const handler = async (event: RoutePayload) => {
   pentru detalii despre facturare și funcționare.
 </Note>
 
-**Contractul resolver-ului.** Tipul `LogicFunctionConfig` din SDK impune acest lucru la compilare: de îndată ce setați `serverRouteTriggerSettings`, handler-ul este constrâns să returneze fie un `Response`, fie `{ workspaceId: string; targetLogicFunctionUniversalIdentifier: string; payload?: object }` (sau un `Promise` al uneia dintre acestea). Pe calea de trimitere, `workspaceId` trebuie să fie un workspace în care funcția țintă este instalată, altfel cererea este respinsă cu `404`. Un rezultat care nu corespunde niciuneia dintre forme — inclusiv unul ale cărui identificatoare nu sunt UUID-uri — este respins cu `502`.
+**Contractul resolver-ului.** Tipul `LogicFunctionConfig` din SDK impune acest lucru la compilare: de îndată ce setați `serverRouteTriggerSettings`, handler-ul este constrâns să returneze fie un `Response`, fie `{ workspaceId: string; targetLogicFunctionUniversalIdentifier: string; payload?: object }` (sau un `Promise` al uneia dintre acestea). Pe calea de dispecerizare, dacă aplicația nu este instalată în `workspaceId`, nu se execută nimic, iar solicitarea este confirmată cu `200` și `{ queued: false, reason: "APPLICATION_NOT_INSTALLED" }`, astfel încât furnizorul nu mai livrează din nou un eveniment pe care niciun spațiu de lucru nu îl poate procesa. Dacă aplicația este instalată acolo, dar nu are nicio funcție cu acel `targetLogicFunctionUniversalIdentifier`, solicitarea este respinsă cu `404`. Un rezultat care nu corespunde niciuneia dintre forme — inclusiv unul ale cărui identificatoare nu sunt UUID-uri — este respins cu `502`.
 
 | Câmp                                     | Tip                 | Notițe                                                                            |
 | ---------------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
@@ -928,6 +928,20 @@ const handler = async (params: { parentMessageId?: string }) => {
   }
 };
 ```
+
+</Note>
+
+<Note>
+**Adrese de serviciu.** `isWorkEmail(address)` din `twenty-sdk/email` diferențiază o adresă de companie de una personală, folosind aceeași listă de furnizori de e-mail gratuit și temporar pe care o utilizează Twenty. Are propria intrare deoarece lista respectivă are aproximativ 240 KB, astfel încât doar funcțiile care o importă o includ în pachet:
+
+```ts
+import { isWorkEmail } from 'twenty-sdk/email';
+
+isWorkEmail('ada@acme.com'); // true
+isWorkEmail('ada@gmail.com'); // false
+```
+
+Domeniul este comparat exact așa cum este scris, deci mai întâi transformă adresa în litere mici.
 
 </Note>
 

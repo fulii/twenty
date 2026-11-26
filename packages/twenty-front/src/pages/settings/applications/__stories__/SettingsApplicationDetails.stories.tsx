@@ -137,6 +137,7 @@ const MARKETPLACE_APP_DETAIL: FindMarketplaceAppDetailQuery['findMarketplaceAppD
     requestedCapabilities: [],
     requestedIframeMediaPermissions: [],
     billsCredits: false,
+    billingPrices: [],
     objects: [],
     roles: [],
   };
@@ -168,7 +169,7 @@ const buildApplicationHandlers = ({
           canBeUninstalled: true,
           isUninstallBlockedByOtherWorkspaceInstallations: false,
           autoUpgrade: false,
-          defaultRoleId: null,
+          requestedRoleId: null,
           settingsCustomTabFrontComponentId: null,
           healthCheckLogicFunctionId,
           availablePackages: {},
