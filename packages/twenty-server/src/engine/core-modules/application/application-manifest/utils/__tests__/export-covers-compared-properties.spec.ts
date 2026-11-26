@@ -34,6 +34,7 @@ import {
   ViewFilterGroupLogicalOperator,
   ViewFilterOperand,
   ViewOpenRecordIn,
+  ViewPresetFilter,
   ViewSortDirection,
   ViewType,
   ViewVisibility,
@@ -115,6 +116,18 @@ const VIEW_FIELD_MANIFEST: ViewFieldManifest = {
   aggregateOperation: AggregateOperations.COUNT,
   viewFieldGroupUniversalIdentifier: VIEW_FIELD_GROUP_UID,
   relationTargetFieldMetadataUniversalIdentifier: FIELD_UID,
+  relationScope: {
+    filters: [],
+    filterGroups: [],
+    sorts: [
+      {
+        fieldMetadataUniversalIdentifier: FIELD_UID,
+        direction: ViewSortDirection.ASC,
+      },
+    ],
+    limit: 1,
+  },
+  label: 'Open opportunities',
 };
 
 const STANDALONE_VIEW_FIELD_MANIFEST: StandaloneViewFieldManifest = {
@@ -159,6 +172,7 @@ const VIEW_SORT_MANIFEST: ViewSortManifest = {
   fieldMetadataUniversalIdentifier: FIELD_UID,
   direction: ViewSortDirection.DESC,
   subFieldName: 'primaryLinkUrl',
+  relationTargetFieldMetadataUniversalIdentifier: FIELD_UID,
 };
 
 const VIEW_MANIFEST: ViewManifest = {
@@ -175,6 +189,7 @@ const VIEW_MANIFEST: ViewManifest = {
   shouldHideEmptyGroups: true,
   groupLoadLimit: 25,
   anyFieldFilterValue: 'acme',
+  presetFilter: ViewPresetFilter.INBOX_OPEN,
   kanbanColumnWidth: 240,
   kanbanAggregateOperation: AggregateOperations.SUM,
   kanbanAggregateOperationFieldMetadataUniversalIdentifier: FIELD_UID,
@@ -237,6 +252,7 @@ const NAVIGATION_MENU_ITEM_MANIFEST: Required<
   position: 12,
   link: 'https://example.com/pets',
   nativePageKey: 'workflows',
+  builtInSectionKey: 'favorites',
   parentUniversalIdentifier: '88888888-8888-4888-8888-888888888888',
   viewUniversalIdentifier: VIEW_UID,
   targetObjectUniversalIdentifier: OBJECT_UID,
@@ -342,10 +358,16 @@ const ALL_RECORDS_UNDER_RECORDS_PERMISSIONS =
 const FIELD_RESTRICTION_LISTS =
   'written as unreadableFields and uneditableFields under its object or rule';
 
+const NOT_IN_APP_MANIFESTS_YET =
+  'only set on individual roles, which are not exported';
+
 const NESTED_IN_RULE =
   'a predicate and a predicate group are written under their rule';
 const PREDICATE_GROUP_OPERATIONS_GAP =
   'not in app manifests until the engine reads predicate group operations';
+
+const WORKSPACE_MEMBER_RELATION_GAP =
+  'no manifest slot yet for member values read through a relation of the workspace member';
 
 const ROW_LEVEL_PERMISSION_KIND_GAPS = {
   deletedAt:
@@ -553,7 +575,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
         },
       }),
     ),
-    renamedProperties: {},
+    renamedProperties: { isPrivate: 'visibility' },
     workspaceLocalProperties: [
       'isActive',
       'universalOverrides',
@@ -571,7 +593,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
         }),
       }),
     ),
-    renamedProperties: {},
+    renamedProperties: { universalRelationScope: 'relationScope' },
     workspaceLocalProperties: ['isActive', 'universalOverrides'],
     knownGaps: VIEW_KIND_GAPS,
   },
@@ -660,7 +682,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
       }),
     ),
     renamedProperties: {},
-    workspaceLocalProperties: [],
+    workspaceLocalProperties: WORKSPACE_LOCAL_PROPERTIES,
     knownGaps: {},
   },
   {
@@ -725,6 +747,8 @@ const EXPORTED_KINDS: ExportedKind[] = [
       ...PAGE_LAYOUT_KIND_GAPS,
       conditionalAvailabilityExpression:
         'no manifest slot; a widget carrying one is reported as unsupported',
+      conditionalAvailability:
+        'no manifest slot; a widget carrying one is reported as unsupported',
     },
   },
   {
@@ -788,6 +812,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
       rowLevelPermissionPredicateGroupUniversalIdentifier:
         FIELD_RESTRICTION_LISTS,
       rowLevelPermissionRuleUniversalIdentifier: FIELD_RESTRICTION_LISTS,
+      sourceFieldMetadataUniversalIdentifier: NOT_IN_APP_MANIFESTS_YET,
     },
   },
   {
@@ -874,6 +899,11 @@ const EXPORTED_KINDS: ExportedKind[] = [
       ...ROW_LEVEL_PERMISSION_KIND_GAPS,
       relationFieldMetadataUniversalIdentifier:
         'no manifest slot yet for a predicate reached through a relation',
+      workspaceMemberRelationFieldMetadataUniversalIdentifier:
+        WORKSPACE_MEMBER_RELATION_GAP,
+      workspaceMemberRelationFilterFieldMetadataUniversalIdentifier:
+        WORKSPACE_MEMBER_RELATION_GAP,
+      workspaceMemberRelationFilterValues: WORKSPACE_MEMBER_RELATION_GAP,
       rowLevelPermissionRuleUniversalIdentifier: NESTED_IN_RULE,
     },
   },
@@ -919,7 +949,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
       exportWorkflowManifestOrThrow(WORKFLOW_MANIFEST),
     ),
     renamedProperties: { versionDefinitionHash: 'version' },
-    workspaceLocalProperties: ['visibility', 'createdByUserWorkspaceId'],
+    workspaceLocalProperties: ['isPrivate', 'createdByUserWorkspaceId'],
     knownGaps: {
       isSystem: 'system workflows are reported as excluded',
       lastPublishedVersionId:
@@ -932,7 +962,11 @@ const EXPORTED_KINDS: ExportedKind[] = [
     metadataName: 'agent',
     emittedProperties: Object.keys(EXPORTED_AGENT_MANIFEST),
     renamedProperties: {},
-    workspaceLocalProperties: WORKSPACE_LOCAL_PROPERTIES,
+    workspaceLocalProperties: [
+      ...WORKSPACE_LOCAL_PROPERTIES,
+      'isPrivate',
+      'createdByUserWorkspaceId',
+    ],
     knownGaps: {
       modelConfiguration:
         'no manifest slot; an agent with one is reported as unsupported',
@@ -989,7 +1023,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
     renamedProperties: {
       objectMetadataUniversalIdentifier: 'objectUniversalIdentifier',
     },
-    workspaceLocalProperties: [],
+    workspaceLocalProperties: WORKSPACE_LOCAL_PROPERTIES,
     knownGaps: {},
   },
 ];

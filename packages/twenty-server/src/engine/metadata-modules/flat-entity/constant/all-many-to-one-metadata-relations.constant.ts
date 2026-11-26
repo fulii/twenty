@@ -68,6 +68,7 @@ export const ALL_MANY_TO_ONE_METADATA_RELATIONS = {
   agent: {
     workspace: null,
     application: null,
+    createdBy: null,
   },
   skill: {
     workspace: null,
@@ -440,6 +441,13 @@ export const ALL_MANY_TO_ONE_METADATA_RELATIONS = {
       isNullable: true,
       universalForeignKey: 'rowLevelPermissionRuleUniversalIdentifier',
     },
+    sourceFieldMetadata: {
+      metadataName: 'fieldMetadata',
+      foreignKey: 'sourceFieldMetadataId',
+      inverseOneToManyProperty: null,
+      isNullable: true,
+      universalForeignKey: 'sourceFieldMetadataUniversalIdentifier',
+    },
   },
   pageLayout: {
     workspace: null,
@@ -518,6 +526,22 @@ export const ALL_MANY_TO_ONE_METADATA_RELATIONS = {
       inverseOneToManyProperty: 'workspaceMemberRowLevelPermissionPredicates',
       isNullable: true,
       universalForeignKey: 'workspaceMemberFieldMetadataUniversalIdentifier',
+    },
+    workspaceMemberRelationFieldMetadata: {
+      metadataName: 'fieldMetadata',
+      foreignKey: 'workspaceMemberRelationFieldMetadataId',
+      inverseOneToManyProperty: null,
+      isNullable: true,
+      universalForeignKey:
+        'workspaceMemberRelationFieldMetadataUniversalIdentifier',
+    },
+    workspaceMemberRelationFilterFieldMetadata: {
+      metadataName: 'fieldMetadata',
+      foreignKey: 'workspaceMemberRelationFilterFieldMetadataId',
+      inverseOneToManyProperty: null,
+      isNullable: true,
+      universalForeignKey:
+        'workspaceMemberRelationFilterFieldMetadataUniversalIdentifier',
     },
     objectMetadata: {
       metadataName: 'objectMetadata',
@@ -643,6 +667,13 @@ export const ALL_MANY_TO_ONE_METADATA_RELATIONS = {
       universalForeignKey: 'fieldMetadataUniversalIdentifier',
       inverseOneToManyProperty: null,
       isNullable: false,
+      metadataName: 'fieldMetadata',
+    },
+    relationTargetFieldMetadata: {
+      foreignKey: 'relationTargetFieldMetadataId',
+      universalForeignKey: 'relationTargetFieldMetadataUniversalIdentifier',
+      inverseOneToManyProperty: null,
+      isNullable: true,
       metadataName: 'fieldMetadata',
     },
     view: {

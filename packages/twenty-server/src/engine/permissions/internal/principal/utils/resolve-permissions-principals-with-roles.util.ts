@@ -32,7 +32,7 @@ import { isPermissionMainPrincipalWorkspaceMember } from 'src/engine/permissions
 
 type PermissionsPrincipalsFlatApplication = Pick<
   FlatApplication,
-  'id' | 'defaultRoleId' | 'sourceType' | 'deletedAt'
+  'id' | 'requestedRoleId' | 'sourceType' | 'deletedAt'
 >;
 
 export type PermissionsPrincipalsRoleMaps = {
@@ -42,6 +42,8 @@ export type PermissionsPrincipalsRoleMaps = {
   };
   userWorkspaceRoleMap: UserWorkspaceRoleMap;
   apiKeyRoleMap: Record<string, string>;
+  // TODO(@charlesBochet): remove the API key channel visibility exemption after 2026-11-30
+  apiKeysIndividualRoleId?: string;
   flatRoleTargetByAgentIdMaps: Partial<
     Record<string, Pick<FlatRoleTarget, 'roleId'>>
   >;
@@ -136,7 +138,10 @@ const findMainPrincipalRoleIds = ({
         roleMaps,
       });
     case 'apiKey':
-      return [roleMaps.apiKeyRoleMap[mainPrincipal.apiKeyId]].filter(isDefined);
+      return [
+        roleMaps.apiKeyRoleMap[mainPrincipal.apiKeyId],
+        roleMaps.apiKeysIndividualRoleId,
+      ].filter(isDefined);
     case 'agent':
       return [
         roleMaps.flatRoleTargetByAgentIdMaps[mainPrincipal.agentId]?.roleId,

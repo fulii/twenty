@@ -10,6 +10,7 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 import { ApplicationTargetArg } from 'src/engine/decorators/auth/application-target-arg.decorator';
 import { AuthApplication } from 'src/engine/decorators/auth/auth-application.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { fromFlatAgentWithRoleIdToAgentDto } from 'src/engine/metadata-modules/flat-agent/utils/from-agent-entity-to-agent-dto.util';
 import { WorkspaceMigrationGraphqlApiExceptionInterceptor } from 'src/engine/workspace-manager/workspace-migration/interceptors/workspace-migration-graphql-api-exception.interceptor';
@@ -61,8 +62,9 @@ export class AgentResolver {
     @AuthApplication({ allowUndefined: true })
     callingApplication: FlatApplication | undefined,
   ): Promise<AgentDTO[]> {
-    const flatAgentsWithRoleId =
-      await this.agentService.findManyAgents(workspaceId);
+    const flatAgentsWithRoleId = await this.agentService.findManyAgents({
+      workspaceId,
+    });
 
     return flatAgentsWithRoleId
       .filter((flatAgent) =>
@@ -104,6 +106,8 @@ export class AgentResolver {
   async createOneAgent(
     @Args('input') input: CreateAgentInput,
     @AuthWorkspace() workspace: WorkspaceEntity,
+    @AuthUserWorkspaceId({ allowUndefined: true })
+    userWorkspaceId: string | undefined,
   ): Promise<AgentDTO> {
     if (isNonEmptyString(input.modelId)) {
       this.aiModelRegistryService.validateModelAvailabilityOrThrow({
@@ -115,10 +119,11 @@ export class AgentResolver {
       });
     }
 
-    const createdAgent = await this.agentService.createOneAgent(
+    const createdAgent = await this.agentService.createOneAgent({
       input,
-      workspace.id,
-    );
+      workspaceId: workspace.id,
+      userWorkspaceId,
+    });
 
     return fromFlatAgentWithRoleIdToAgentDto(createdAgent);
   }
@@ -137,6 +142,8 @@ export class AgentResolver {
     })
     input: UpdateAgentInput,
     @AuthWorkspace() workspace: WorkspaceEntity,
+    @AuthUserWorkspaceId({ allowUndefined: true })
+    userWorkspaceId: string | undefined,
   ): Promise<AgentDTO> {
     if (isNonEmptyString(input.modelId)) {
       this.aiModelRegistryService.validateModelAvailabilityOrThrow({
@@ -151,6 +158,7 @@ export class AgentResolver {
     const updatedAgent = await this.agentService.updateOneAgent({
       input,
       workspaceId: workspace.id,
+      userWorkspaceId,
     });
 
     return fromFlatAgentWithRoleIdToAgentDto(updatedAgent);
@@ -171,10 +179,10 @@ export class AgentResolver {
     { id }: AgentIdInput,
     @AuthWorkspace() { id: workspaceId }: WorkspaceEntity,
   ): Promise<AgentDTO> {
-    const deletedFlatAgent = await this.agentService.deleteOneAgent(
+    const deletedFlatAgent = await this.agentService.deleteOneAgent({
       id,
       workspaceId,
-    );
+    });
 
     return fromFlatAgentWithRoleIdToAgentDto(deletedFlatAgent);
   }

@@ -12,6 +12,7 @@ export const NAVIGATION_MENU_ITEM_FRAGMENT = gql`
     name
     link
     nativePageKey
+    builtInSectionKey
     icon
     color
     pageLayoutId
@@ -20,6 +21,8 @@ export const NAVIGATION_MENU_ITEM_FRAGMENT = gql`
     agentId
     position
     applicationId
+    universalIdentifier
+    isActive
     createdAt
     updatedAt
   }

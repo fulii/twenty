@@ -1,8 +1,8 @@
 import { InboxThreadDetailsDropdown } from '@/inbox/components/InboxThreadDetailsDropdown';
-import { useAiChatThreadDisplayLabel } from '@/ai/hooks/useAiChatThreadDisplayLabel';
-import { newAiChatThreadIdState } from '@/ai/states/newAiChatThreadIdState';
-import { aiChatThreadRecordFamilySelector } from '@/ai/states/selectors/aiChatThreadRecordFamilySelector';
-import { useAskAiSidePanelThreadId } from '@/side-panel/pages/ask-ai/hooks/useAskAiSidePanelThreadId';
+import { useAiChatThreadDisplayLabel } from '@/ai-chat/threads/hooks/useAiChatThreadDisplayLabel';
+import { newAiChatThreadIdState } from '@/ai-chat/states/newAiChatThreadIdState';
+import { aiChatThreadRecordFamilySelector } from '@/ai-chat/threads/states/selectors/aiChatThreadRecordFamilySelector';
+import { useAskAiSidePanelThreadId } from '@/side-panel/hooks/useAskAiSidePanelThreadId';
 import { HeaderIdentifier } from '@/ui/layout/page/components/HeaderIdentifier';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
